@@ -1,9 +1,6 @@
 import { useState, useEffect } from 'react'
 import './App.css'
 
-// Get API URL from environment or fallback to current host
-const API_URL = import.meta.env.VITE_API_URL || `http://${window.location.hostname}:8080`
-
 function App() {
   const [mac, setMac] = useState('')
   const [status, setStatus] = useState('')
@@ -31,7 +28,7 @@ function App() {
 
     setLoading(true)
     try {
-      const res = await fetch(`${API_URL}/api/wake?mac=${mac}`)
+      const res = await fetch(`/api/wake?mac=${mac}`)
       const data = await res.json()
       if (res.ok) {
         // Add to history if not already present
@@ -75,7 +72,7 @@ function App() {
         </button>
       </div>
       {status && <p className={status.includes('Error') ? 'error' : 'success'}>{status}</p>}
-      
+
       {history.length > 0 && (
         <div className="history-section">
           <h3>Recent MAC Addresses</h3>
@@ -92,10 +89,6 @@ function App() {
           </div>
         </div>
       )}
-      
-      <div className="api-info">
-        <small>API Endpoint: {API_URL}</small>
-      </div>
     </div>
   )
 }
