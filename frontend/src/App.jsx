@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import './App.css'
 
 // Get API URL from environment or fallback to current host
@@ -8,6 +8,15 @@ function App() {
   const [mac, setMac] = useState('')
   const [status, setStatus] = useState('')
   const [loading, setLoading] = useState(false)
+  const [history, setHistory] = useState([])
+
+  useEffect(() => {
+    // Load history from localStorage on component mount
+    const savedHistory = localStorage.getItem('macHistory')
+    if (savedHistory) {
+      setHistory(JSON.parse(savedHistory))
+    }
+  }, [])
 
   const validateMac = (mac) => {
     const regex = /^([0-9A-Fa-f]{2}[:-]){5}([0-9A-Fa-f]{2})$/
@@ -24,12 +33,26 @@ function App() {
     try {
       const res = await fetch(`${API_URL}/api/wake?mac=${mac}`)
       const data = await res.json()
-      setStatus(res.ok ? data.message : `Error: ${data.error}`)
+      if (res.ok) {
+        // Add to history if not already present
+        if (!history.includes(mac)) {
+          const newHistory = [mac, ...history].slice(0, 5) // Keep last 5 entries
+          setHistory(newHistory)
+          localStorage.setItem('macHistory', JSON.stringify(newHistory))
+        }
+        setStatus(data.message)
+      } else {
+        setStatus(`Error: ${data.error}`)
+      }
     } catch (err) {
       setStatus(`Error: ${err.message}`)
     } finally {
       setLoading(false)
     }
+  }
+
+  const handleHistorySelect = (selectedMac) => {
+    setMac(selectedMac)
   }
 
   return (
@@ -52,6 +75,24 @@ function App() {
         </button>
       </div>
       {status && <p className={status.includes('Error') ? 'error' : 'success'}>{status}</p>}
+      
+      {history.length > 0 && (
+        <div className="history-section">
+          <h3>Recent MAC Addresses</h3>
+          <div className="history-list">
+            {history.map((historyMac, index) => (
+              <button
+                key={index}
+                onClick={() => handleHistorySelect(historyMac)}
+                className="history-item"
+              >
+                {historyMac}
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
+      
       <div className="api-info">
         <small>API Endpoint: {API_URL}</small>
       </div>

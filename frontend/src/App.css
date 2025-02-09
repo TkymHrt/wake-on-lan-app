@@ -104,3 +104,44 @@
 .api-info small {
   color: #666;
 }
+
+.history-section {
+  margin-top: 2rem;
+  padding: 1rem;
+  background-color: rgba(100, 108, 255, 0.1);
+  border-radius: 8px;
+}
+
+.history-section h3 {
+  margin: 0 0 1rem 0;
+  font-size: 1.2rem;
+  color: #646cff;
+}
+
+.history-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  justify-content: center;
+}
+
+.history-item {
+  background-color: #646cff;
+  color: white;
+  border: none;
+  padding: 0.5rem 1rem;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 0.9rem;
+  transition: background-color 0.2s;
+}
+
+.history-item:hover {
+  background-color: #5058cc;
+}
+
+@media (prefers-color-scheme: light) {
+  .history-section {
+    background-color: rgba(100, 108, 255, 0.05);
+  }
+}
