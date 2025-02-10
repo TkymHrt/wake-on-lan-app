@@ -1,70 +1,88 @@
 # Wake on LAN App
 
-Wake on LANをWebブラウザから実行できるシンプルなアプリケーションです。
+Webブラウザから Wake on LAN (WOL) を実行し、ネットワーク内のデバイスをリモートで起動できるアプリケーションです。
 
-<img src="https://github.com/user-attachments/assets/c27172a8-8417-4944-989f-70c708da8ddd" width="50%">
+<div align="center">
+  <img src="https://github.com/user-attachments/assets/c27172a8-8417-4944-989f-70c708da8ddd" width="600">
+</div>
 
-## 技術スタック / Tech Stack
+## 特徴 (Features)
 
-### フロントエンド / Frontend
-- React
-- Vite
+*   **シンプルなWebインターフェース:** 直感的な操作で、簡単にWOLパケットを送信できます。
+*   **デバイス管理:** MACアドレス、IPアドレス、デバイス名を登録して、複数のデバイスを管理できます。
+*   **リモート起動:** Webブラウザからネットワーク内のデバイスを起動できます。
 
-### バックエンド / Backend
-- Go
+## 技術スタック (Tech Stack)
 
-## セットアップ / Setup
+### フロントエンド (Frontend)
 
-### 必要条件 / Prerequisites
+*   **React:** ユーザーインターフェース構築のためのJavaScriptライブラリ
+*   **Vite:** 高速な開発環境とビルドツール
 
-- Node.js
-- Go
+### バックエンド (Backend)
 
-### インストール / Installation
+*   **Go:** 高パフォーマンスなバックエンド処理
 
-1. リポジトリをクローン / Clone the repository:
-```bash
-git clone https://github.com/TkymHrt/wake-on-lan-app.git
-cd wake-on-lan-app
-```
 
-2. フロントエンドの依存関係をインストール / Install frontend dependencies:
-```bash
-cd frontend
-npm install
-```
+## 必要条件 (Prerequisites)
 
-### 開発環境での実行 / Running in Development
+*   **Node.js:** JavaScript実行環境 (npm が利用可能であること)
+*   **Go:** Go言語実行環境
 
-1. フロントエンド開発サーバーを起動 / Start frontend development server:
-```bash
-cd frontend
-npm run dev
-```
+## セットアップ (Setup)
 
-2. バックエンドサーバーを起動 / Start backend server:
-```bash
-cd backend
-go run main.go
-```
+### インストール (Installation)
 
-### 本番環境用ビルド / Production Build
+1.  リポジトリをクローン:
 
-1. フロントエンドをビルド / Build frontend:
-```bash
-cd frontend
-npm run build
-```
+    ```bash
+    git clone https://github.com/TkymHrt/wake-on-lan-app.git
+    cd wake-on-lan-app
+    ```
 
-2. バックエンドをビルド / Build backend:
-```bash
-cd backend
-go run main.go
-```
+2.  フロントエンドの依存関係をインストール:
 
-## 使用方法 / Usage
+    ```bash
+    cd frontend
+    npm install
+    ```
 
-1. MACアドレスを入力（必須）/ Enter MAC address (required)
-2. デバイス名を入力（任意）/ Enter device name (optional)
-3. IPアドレスを入力（任意）/ Enter IP address (optional)
-4. 「起動する」ボタンをクリック / Click "Wake" button
+### 環境設定 (Configuration)
+
+バックエンドの設定は、`backend/main.go` ファイルで行います。必要に応じて、ポート番号などを変更してください。
+
+## 開発環境 (Development)
+
+1. フロントエンド開発サーバーを起動:
+   ```bash
+   cd frontend
+   npm run dev
+   ```
+
+2. バックエンドサーバーを起動:
+   ```bash
+   cd backend
+   go run main.go
+   ```
+
+## 本番環境用ビルド (Production Build)
+
+1. フロントエンドをビルド:
+   ```bash
+   cd frontend
+   npm run build
+   ```
+
+2. バックエンドをビルド:
+   ```bash
+   cd backend
+   go build
+   ```
+
+## 使い方 (Usage)
+
+1. MACアドレスを入力（必須）
+2. デバイス名を入力（任意）
+3. IPアドレスを入力（任意）
+4. 「起動する」ボタンをクリック
+
