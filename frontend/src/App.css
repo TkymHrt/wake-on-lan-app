@@ -45,21 +45,18 @@
     --focus-outline: rgba(123, 130, 255, 0.6);
   }
 
-  /* ダークモードでのテキスト可読性を向上 */
   .inputHelp,
   .statusMessages,
   .historyCount {
     color: var(--text-secondary);
   }
 
-  /* ダークモードでのカード視認性を向上 */
   .formCard,
   .historyCard,
   .statusCard {
     box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
   }
 
-  /* ダークモードでのフォーカス表示を強調 */
   .macInput:focus,
   .deviceNameInput:focus,
   .ipInput:focus,
@@ -549,7 +546,6 @@
   color: var(--text-primary);
 }
 
-/* スピナーのアニメーション */
 @keyframes spin {
   to {
     transform: rotate(360deg);
@@ -581,7 +577,6 @@
   animation: spin 0.8s linear infinite;
 }
 
-/* レスポンシブ対応の強化 */
 @media screen and (max-width: 768px) {
   .formSection {
     padding: 1rem;
@@ -596,13 +591,11 @@
   }
 }
 
-/* フォーム要素の無効状態のスタイル */
 input:disabled {
   opacity: 0.7;
   cursor: not-allowed;
 }
 
-/* ボタンのホバーエフェクトの改善 */
 .wakeButton,
 .clearButton {
   transition: all 0.2s ease-in-out;
@@ -644,7 +637,6 @@ input:disabled {
   gap: 1rem;
 }
 
-/* ダークモード対応 */
 @media (prefers-color-scheme: dark) {
   .navButton:hover {
     background-color: var(--section-bg);
@@ -662,18 +654,15 @@ input:disabled {
   box-shadow: 0 0 0 3px var(--background), 0 0 0 6px var(--primary-color);
 }
 
-/* タブでの移動をより視認しやすく */
 :focus-visible {
   outline: none;
   border-radius: 4px;
 }
 
-/* フォームのラベルをよりクリックしやすく */
 label {
   cursor: pointer;
 }
 
-/* ボタンのアクセシビリティ改善 */
 .wakeButton,
 .clearButton,
 .navButton,
@@ -709,7 +698,6 @@ label {
   transition: 0s;
 }
 
-/* モバイルでのタッチ操作改善 */
 @media (hover: none) {
 
   .wakeButton,
