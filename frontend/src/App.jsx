@@ -82,13 +82,13 @@ function App() {
   const updateHistory = (macToUpdate, deviceNameToUpdate) => {
     const targetMac = macToUpdate || mac;
     const targetDeviceName = deviceNameToUpdate || deviceName;
-    
+
     const existingIndex = history.findIndex(item => item.mac === targetMac);
     if (existingIndex > -1) {
       const newHistory = [...history];
-      newHistory[existingIndex] = { 
-        mac: targetMac, 
-        deviceName: targetDeviceName || history[existingIndex].deviceName 
+      newHistory[existingIndex] = {
+        mac: targetMac,
+        deviceName: targetDeviceName || history[existingIndex].deviceName
       };
       newHistory.sort((a, b) => (a.mac === targetMac ? -1 : b.mac === targetMac ? 1 : 0));
       setHistory(newHistory);
@@ -96,11 +96,6 @@ function App() {
       const newHistory = [{ mac: targetMac, deviceName: targetDeviceName }, ...history].slice(0, MAX_HISTORY_ITEMS);
       setHistory(newHistory);
     }
-  };
-
-  const handleHistorySelect = (selectedItem) => {
-    setMac(selectedItem.mac);
-    setDeviceName(selectedItem.deviceName);
   };
 
   const handleRemoveHistoryItem = (index) => {
@@ -124,6 +119,9 @@ function App() {
               onChange={(e) => setMac(e.target.value)}
               className="macInput"
             />
+            {!validateMac(mac) && mac.length > 0 && (
+              <p className="error">Invalid MAC address format</p>
+            )}
           </div>
           <div>
             <label htmlFor="deviceName">Device Name</label>
@@ -144,12 +142,23 @@ function App() {
           >
             {loading ? 'Sending...' : 'Wake'}
           </button>
+          <button
+            onClick={() => {
+              setMac('');
+              setDeviceName('');
+              setStatus('');
+            }}
+            className="clearButton"
+            aria-label="Clear inputs"
+          >
+            Clear
+          </button>
         </div>
 
         {status && (
-          <p className={status.isError ? 'error' : 'success'}>
-            {status.message}
-          </p>
+          <div className={status.isError ? 'error' : 'success'}>
+            {status.isError ? '❌' : '✅️'} {status.message}
+          </div>
         )}
 
         {history.length > 0 && (
@@ -167,14 +176,14 @@ function App() {
                         className="actionButton wakeAction"
                         aria-label="Wake device"
                       >
-                        ⚡
+                        Wake
                       </button>
                       <button
                         onClick={() => handleRemoveHistoryItem(index)}
                         className="actionButton removeAction"
                         aria-label="Remove from history"
                       >
-                        🗑️
+                        Delete
                       </button>
                     </div>
                   </div>
