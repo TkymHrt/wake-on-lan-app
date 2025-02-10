@@ -82,15 +82,15 @@ function App() {
               if (!statusRes.ok) throw new Error('Failed to check status');
               const statusData = await statusRes.json();
               if (statusData.online) {
-                setStatus(prev => ({ ...prev, message: `${prev.message} Device is online.` }));
+                setStatus({ message: `${data.message}\nDevice is online.`, isError: false });
                 clearInterval(intervalId);
               } else if (attempts >= maxAttempts) {
-                setStatus(prev => ({ ...prev, message: `${prev.message} Device did not come online.` }));
+                setStatus({ message: `${data.message}\nDevice did not come online.`, isError: false });
                 clearInterval(intervalId);
               }
             } catch (err) {
               if (attempts >= maxAttempts) {
-                setStatus(prev => ({ ...prev, message: `${prev.message} Error checking status.` }));
+                setStatus({ message: `${data.message}\nError checking status.`, isError: true });
                 clearInterval(intervalId);
               }
             }
@@ -139,15 +139,15 @@ function App() {
                 if (!statusRes.ok) throw new Error('Failed to check status');
                 const statusData = await statusRes.json();
                 if (statusData.online) {
-                  setStatus(prev => ({ ...prev, message: `${prev.message} Device is online.` }));
+                  setStatus({ message: `${data.message}\nDevice is online.`, isError: false });
                   clearInterval(intervalId);
                 } else if (attempts >= maxAttempts) {
-                  setStatus(prev => ({ ...prev, message: `${prev.message} Device did not come online.` }));
+                  setStatus({ message: `${data.message}\nDevice did not come online.`, isError: false });
                   clearInterval(intervalId);
                 }
               } catch (err) {
                 if (attempts >= maxAttempts) {
-                  setStatus(prev => ({ ...prev, message: `${prev.message} Error checking status.` }));
+                  setStatus({ message: `${data.message}\nError checking status.`, isError: true });
                   clearInterval(intervalId);
                 }
               }
@@ -249,7 +249,11 @@ function App() {
 
         {status && (
           <div className={status.isError ? 'error' : 'success'}>
-            {status.isError ? '❌' : '✅️'} {status.message}
+            <div className="statusMessages">
+              {status.message.split('\n').map((msg, i) => (
+                <div key={i} className="statusLine">{msg}</div>
+              ))}
+            </div>
           </div>
         )}
 
