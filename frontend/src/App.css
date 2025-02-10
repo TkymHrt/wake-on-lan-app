@@ -1,147 +1,264 @@
-#root {
-  max-width: 1280px;
-  margin: 0 auto;
-  padding: 2rem;
-  text-align: center;
-}
-
-.logo {
-  height: 6em;
-  padding: 1.5em;
-  will-change: filter;
-  transition: filter 300ms;
-}
-
-.logo:hover {
-  filter: drop-shadow(0 0 2em #646cffaa);
-}
-
-.logo.react:hover {
-  filter: drop-shadow(0 0 2em #61dafbaa);
-}
-
-@keyframes logo-spin {
-  from {
-    transform: rotate(0deg);
-  }
-
-  to {
-    transform: rotate(360deg);
-  }
-}
-
-@media (prefers-reduced-motion: no-preference) {
-  a:nth-of-type(2) .logo {
-    animation: logo-spin infinite 20s linear;
-  }
-}
-
-.card {
-  padding: 2em;
-}
-
-.read-the-docs {
-  color: #888;
+.App {
+  width: 100vw;
+  height: 100vh;
+  display: grid;
+  place-items: center;
 }
 
 .container {
-  max-width: 600px;
-  margin: 0 auto;
+  width: calc(100% - 2rem);
+  margin: 1rem;
   padding: 2rem;
   text-align: center;
+  font-family: sans-serif;
+  border-radius: 1rem;
 }
 
-.input-group {
+@media screen and (min-width: 768px) {
+  .container {
+    max-width: 400px;
+  }
+}
+
+.container h1 {
+  margin-bottom: 1rem;
+  color: #333;
+}
+
+.inputGroup {
   display: flex;
-  gap: 1rem;
-  margin: 2rem 0;
+  flex-direction: column;
+  gap: 1.2rem;
+  margin-bottom: 2rem;
+  max-width: 500px;
+  margin-left: auto;
+  margin-right: auto;
 }
 
-.mac-input {
+.inputGroup>div {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.inputGroup label {
+  text-align: left;
+  font-weight: 600;
+  font-size: 0.9rem;
+  color: #666;
+}
+
+.macInput,
+.deviceNameInput,
+.wakeButton {
+  padding: 0.75rem;
+  font-size: 1rem;
+  border-radius: 6px;
+  transition: all 0.2s ease-in-out;
+}
+
+.macInput,
+.deviceNameInput {
   flex: 1;
-  padding: 0.5rem;
-  font-size: 1rem;
-  border: 1px solid #ccc;
-  border-radius: 4px;
+  min-width: 200px;
+  border: 2px solid #ccc;
+  margin-bottom: 0.2rem;
 }
 
-.wake-button {
-  padding: 0.5rem 1.5rem;
-  font-size: 1rem;
+.macInput:focus,
+.deviceNameInput:focus {
+  border-color: #646cff;
+  outline: none;
+}
+
+.deviceNameInput {
+  flex: 0.8;
+}
+
+.wakeButton {
   background-color: #646cff;
   color: white;
   border: none;
-  border-radius: 4px;
   cursor: pointer;
-  transition: background-color 0.2s;
+  white-space: nowrap;
 }
 
-.wake-button:hover {
+.wakeButton:hover {
   background-color: #5058cc;
 }
 
-.wake-button:disabled {
+.wakeButton:disabled {
   background-color: #cccccc;
   cursor: not-allowed;
 }
 
 .error {
   color: #dc2626;
+  margin-top: 0.5rem;
 }
 
 .success {
   color: #16a34a;
+  margin-top: 0.5rem;
 }
 
-.api-info {
-  margin-top: 2rem;
-  padding: 0.5rem;
-  background-color: #f8f9fa;
-  border-radius: 4px;
-  font-family: monospace;
-}
-
-.api-info small {
-  color: #666;
-}
-
-.history-section {
+.historySection {
   margin-top: 2rem;
   padding: 1rem;
   background-color: rgba(100, 108, 255, 0.1);
   border-radius: 8px;
 }
 
-.history-section h3 {
+.historySection h3 {
   margin: 0 0 1rem 0;
   font-size: 1.2rem;
   color: #646cff;
 }
 
-.history-list {
+.historyList {
   display: flex;
   flex-wrap: wrap;
   gap: 0.5rem;
   justify-content: center;
 }
 
-.history-item {
-  background-color: #646cff;
+.historyItemContainer {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  max-width: 300px;
+}
+
+.historyItem {
+  background-color: #f5f5f5;
+  border-radius: 8px;
+  padding: 0.75rem;
+  width: 100%;
+  text-align: left;
+}
+
+.deviceName {
+  display: block;
+  font-weight: 600;
+  font-size: 0.95rem;
+  color: #333;
+  margin-bottom: 0.2rem;
+}
+
+.macAddress {
+  display: block;
+  font-size: 0.8rem;
+  color: #666;
+  margin-bottom: 0.5rem;
+}
+
+.historyActions {
+  display: flex;
+  gap: 0.5rem;
+  justify-content: flex-end;
+  margin-top: 0.5rem;
+  border-top: 1px solid rgba(0, 0, 0, 0.1);
+  padding-top: 0.5rem;
+}
+
+.actionButton {
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 0.4rem;
+  border-radius: 4px;
+  font-size: 1.2rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s ease;
+}
+
+.wakeAction:hover {
+  background-color: rgba(100, 108, 255, 0.1);
+  color: #646cff;
+}
+
+.removeAction:hover {
+  background-color: rgba(220, 38, 38, 0.1);
+  color: #dc2626;
+}
+
+.removeButton {
+  position: absolute;
+  top: 0rem;
+  right: 0.2rem;
+  background-color: transparent;
   color: white;
   border: none;
-  padding: 0.5rem 1rem;
-  border-radius: 4px;
   cursor: pointer;
-  font-size: 0.9rem;
-  transition: background-color 0.2s;
+  font-size: 1rem;
+  padding: 0;
+  width: 1.5rem;
+  height: 1.5rem;
+  line-height: 1;
 }
 
-.history-item:hover {
-  background-color: #5058cc;
+.removeButton:hover {
+  color: #dc2626;
 }
 
-@media (prefers-color-scheme: light) {
-  .history-section {
-    background-color: rgba(100, 108, 255, 0.05);
+@media (prefers-color-scheme: dark) {
+  .container {
+    background-color: #242424;
+    color: #eee;
+  }
+
+  .container h1 {
+    color: #f0f0f0;
+  }
+
+  .macInput,
+  .deviceNameInput {
+    background-color: #333;
+    color: #eee;
+    border-color: #555;
+  }
+
+  .macInput:focus,
+  .deviceNameInput:focus {
+    border-color: #999;
+  }
+
+  .historySection {
+    background-color: rgba(100, 108, 255, 0.2);
+  }
+
+  .historyItem {
+    background-color: #2a2a2a;
+  }
+
+  .deviceName {
+    color: #f0f0f0;
+  }
+
+  .macAddress {
+    color: #999;
+  }
+
+  .historyActions {
+    border-top-color: rgba(255, 255, 255, 0.1);
+  }
+
+  .actionButton {
+    color: #f0f0f0;
+  }
+
+  .wakeAction:hover {
+    background-color: rgba(100, 108, 255, 0.2);
+  }
+
+  .removeAction:hover {
+    background-color: rgba(220, 38, 38, 0.2);
+  }
+
+  .inputGroup label {
+    color: #999;
   }
 }

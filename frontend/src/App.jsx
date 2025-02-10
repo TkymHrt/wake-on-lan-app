@@ -1,96 +1,191 @@
-import { useState, useEffect } from 'react'
-import './App.css'
+import { useState, useEffect } from 'react';
+import './App.css';
+
+const MAX_HISTORY_ITEMS = 5;
 
 function App() {
-  const [mac, setMac] = useState('')
-  const [status, setStatus] = useState('')
-  const [loading, setLoading] = useState(false)
-  const [history, setHistory] = useState([])
+  const [mac, setMac] = useState('');
+  const [deviceName, setDeviceName] = useState('');
+  const [status, setStatus] = useState('');
+  const [loading, setLoading] = useState(false);
+  const [history, setHistory] = useState([]);
 
   useEffect(() => {
-    // Load history from localStorage on component mount
-    const savedHistory = localStorage.getItem('macHistory')
+    const savedHistory = localStorage.getItem('wolHistory');
     if (savedHistory) {
-      setHistory(JSON.parse(savedHistory))
+      setHistory(JSON.parse(savedHistory));
     }
-  }, [])
+  }, []);
+
+  useEffect(() => {
+    localStorage.setItem('wolHistory', JSON.stringify(history));
+  }, [history]);
+
 
   const validateMac = (mac) => {
-    const regex = /^([0-9A-Fa-f]{2}[:-]){5}([0-9A-Fa-f]{2})$/
-    return regex.test(mac)
-  }
+    const regex = /^([0-9A-Fa-f]{2}[:-]){5}([0-9A-Fa-f]{2})$/;
+    return regex.test(mac);
+  };
 
   const handleWake = async () => {
     if (!validateMac(mac)) {
-      setStatus('Error: Invalid MAC address format (use XX:XX:XX:XX:XX:XX)')
-      return
+      setStatus({ message: 'Error: Invalid MAC address format (use XX:XX:XX:XX:XX:XX)', isError: true });
+      return;
     }
 
-    setLoading(true)
+    setLoading(true);
+    setStatus(null);
     try {
-      const res = await fetch(`/api/wake?mac=${mac}`)
-      const data = await res.json()
+      const res = await fetch(`/api/wake?mac=${mac}`);
+      const data = await res.json();
       if (res.ok) {
-        // Add to history if not already present
-        if (!history.includes(mac)) {
-          const newHistory = [mac, ...history].slice(0, 5) // Keep last 5 entries
-          setHistory(newHistory)
-          localStorage.setItem('macHistory', JSON.stringify(newHistory))
-        }
-        setStatus(data.message)
+        updateHistory();
+        setStatus({ message: data.message, isError: false });
       } else {
-        setStatus(`Error: ${data.error}`)
+        setStatus({ message: `Error: ${data.error}`, isError: true });
       }
     } catch (err) {
-      setStatus(`Error: ${err.message}`)
+      setStatus({ message: `Error: ${err.message}`, isError: true });
     } finally {
-      setLoading(false)
+      setLoading(false);
     }
-  }
+  };
 
-  const handleHistorySelect = (selectedMac) => {
-    setMac(selectedMac)
-  }
+  const handleHistoryWake = (mac, deviceName) => {
+    return async () => {
+      if (!validateMac(mac)) {
+        setStatus({ message: 'Error: Invalid MAC address format (use XX:XX:XX:XX:XX:XX)', isError: true });
+        return;
+      }
+
+      setLoading(true);
+      setStatus(null);
+      try {
+        const res = await fetch(`/api/wake?mac=${mac}`);
+        const data = await res.json();
+        if (res.ok) {
+          updateHistory(mac, deviceName);
+          setMac(mac);
+          setDeviceName(deviceName);
+          setStatus({ message: data.message, isError: false });
+        } else {
+          setStatus({ message: `Error: ${data.error}`, isError: true });
+        }
+      } catch (err) {
+        setStatus({ message: `Error: ${err.message}`, isError: true });
+      } finally {
+        setLoading(false);
+      }
+    };
+  };
+
+  const updateHistory = (macToUpdate, deviceNameToUpdate) => {
+    const targetMac = macToUpdate || mac;
+    const targetDeviceName = deviceNameToUpdate || deviceName;
+    
+    const existingIndex = history.findIndex(item => item.mac === targetMac);
+    if (existingIndex > -1) {
+      const newHistory = [...history];
+      newHistory[existingIndex] = { 
+        mac: targetMac, 
+        deviceName: targetDeviceName || history[existingIndex].deviceName 
+      };
+      newHistory.sort((a, b) => (a.mac === targetMac ? -1 : b.mac === targetMac ? 1 : 0));
+      setHistory(newHistory);
+    } else {
+      const newHistory = [{ mac: targetMac, deviceName: targetDeviceName }, ...history].slice(0, MAX_HISTORY_ITEMS);
+      setHistory(newHistory);
+    }
+  };
+
+  const handleHistorySelect = (selectedItem) => {
+    setMac(selectedItem.mac);
+    setDeviceName(selectedItem.deviceName);
+  };
+
+  const handleRemoveHistoryItem = (index) => {
+    const newHistory = [...history];
+    newHistory.splice(index, 1);
+    setHistory(newHistory);
+  };
 
   return (
-    <div className="container">
-      <h1>Wake-on-LAN</h1>
-      <div className="input-group">
-        <input
-          type="text"
-          placeholder="Enter MAC address (e.g., AA:BB:CC:DD:EE:FF)"
-          value={mac}
-          onChange={(e) => setMac(e.target.value)}
-          className="mac-input"
-        />
-        <button
-          onClick={handleWake}
-          disabled={loading || !mac}
-          className="wake-button"
-        >
-          {loading ? 'Sending...' : 'Wake PC'}
-        </button>
-      </div>
-      {status && <p className={status.includes('Error') ? 'error' : 'success'}>{status}</p>}
-
-      {history.length > 0 && (
-        <div className="history-section">
-          <h3>Recent MAC Addresses</h3>
-          <div className="history-list">
-            {history.map((historyMac, index) => (
-              <button
-                key={index}
-                onClick={() => handleHistorySelect(historyMac)}
-                className="history-item"
-              >
-                {historyMac}
-              </button>
-            ))}
+    <div className='App'>
+      <div className="container">
+        <h1>Wake on LAN</h1>
+        <div className="inputGroup">
+          <div>
+            <label htmlFor="macAddress">MAC Address</label>
+            <input
+              id="macAddress"
+              type="text"
+              placeholder="MAC Address (e.g., AA:BB:CC:DD:EE:FF)"
+              value={mac}
+              onChange={(e) => setMac(e.target.value)}
+              className="macInput"
+            />
           </div>
+          <div>
+            <label htmlFor="deviceName">Device Name</label>
+            <input
+              id="deviceName"
+              type="text"
+              placeholder="Device Name (Optional)"
+              value={deviceName}
+              onChange={(e) => setDeviceName(e.target.value)}
+              className="deviceNameInput"
+            />
+          </div>
+          <button
+            onClick={handleWake}
+            disabled={loading || !mac}
+            className="wakeButton"
+            aria-label="Wake"
+          >
+            {loading ? 'Sending...' : 'Wake'}
+          </button>
         </div>
-      )}
+
+        {status && (
+          <p className={status.isError ? 'error' : 'success'}>
+            {status.message}
+          </p>
+        )}
+
+        {history.length > 0 && (
+          <div className="historySection">
+            <h3>Recent Devices</h3>
+            <div className="historyList">
+              {history.map((item, index) => (
+                <div key={index} className="historyItemContainer">
+                  <div className="historyItem">
+                    <span className="deviceName">{item.deviceName || 'Unknown Device'}</span>
+                    <span className="macAddress">{item.mac}</span>
+                    <div className="historyActions">
+                      <button
+                        onClick={handleHistoryWake(item.mac, item.deviceName)}
+                        className="actionButton wakeAction"
+                        aria-label="Wake device"
+                      >
+                        ⚡
+                      </button>
+                      <button
+                        onClick={() => handleRemoveHistoryItem(index)}
+                        className="actionButton removeAction"
+                        aria-label="Remove from history"
+                      >
+                        🗑️
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+      </div>
     </div>
-  )
+  );
 }
 
-export default App
+export default App;
