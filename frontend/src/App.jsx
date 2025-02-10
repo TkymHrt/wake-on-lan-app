@@ -42,12 +42,8 @@ function App() {
       setDeviceStatus(newStatus);
     };
 
-    // Initial check
     checkAllDevicesStatus();
-
-    // Set up periodic checking every 30 seconds
     const intervalId = setInterval(checkAllDevicesStatus, 30000);
-
     return () => clearInterval(intervalId);
   }, [history]);
 
@@ -56,8 +52,8 @@ function App() {
     return regex.test(mac);
   };
 
-  const handleWake = async () => {
-    if (!validateMac(mac)) {
+  const handleWake = async (targetMac = mac, targetDeviceName = deviceName, targetIp = ipAddress) => {
+    if (!validateMac(targetMac)) {
       setStatus({ message: 'Error: Invalid MAC address format (use XX:XX:XX:XX:XX:XX)', isError: true });
       return;
     }
@@ -65,20 +61,19 @@ function App() {
     setLoading(true);
     setStatus(null);
     try {
-      const res = await fetch(`/api/wake?mac=${mac}`);
+      const res = await fetch(`/api/wake?mac=${targetMac}`);
       const data = await res.json();
       if (res.ok) {
-        updateHistory(mac, deviceName, ipAddress);
+        updateHistory(targetMac, targetDeviceName, targetIp);
         setStatus({ message: data.message, isError: false });
 
-        if (ipAddress) {
+        if (targetIp) {
           let attempts = 0;
           const maxAttempts = 10;
           const checkStatus = async () => {
             attempts++;
-            console.log(`Checking status... Attempt ${attempts}`);
             try {
-              const statusRes = await fetch(`/api/status?ip=${encodeURIComponent(ipAddress)}`);
+              const statusRes = await fetch(`/api/status?ip=${encodeURIComponent(targetIp)}`);
               if (!statusRes.ok) throw new Error('Failed to check status');
               const statusData = await statusRes.json();
               if (statusData.online) {
@@ -108,64 +103,6 @@ function App() {
     }
   };
 
-  const handleHistoryWake = (item) => {
-    return async () => {
-      setMac(item.mac);
-      setDeviceName(item.deviceName);
-      setIpAddress(item.ipAddress || '');
-
-      if (!validateMac(item.mac)) {
-        setStatus({ message: 'Error: Invalid MAC address format', isError: true });
-        return;
-      }
-
-      setLoading(true);
-      setStatus(null);
-      try {
-        const res = await fetch(`/api/wake?mac=${item.mac}`);
-        const data = await res.json();
-        if (res.ok) {
-          updateHistory(item.mac, item.deviceName, item.ipAddress);
-          setStatus({ message: data.message, isError: false });
-
-          if (item.ipAddress) {
-            let attempts = 0;
-            const maxAttempts = 10;
-            const checkStatus = async () => {
-              attempts++;
-              console.log(`Checking status... Attempt ${attempts}`);
-              try {
-                const statusRes = await fetch(`/api/status?ip=${encodeURIComponent(item.ipAddress)}`);
-                if (!statusRes.ok) throw new Error('Failed to check status');
-                const statusData = await statusRes.json();
-                if (statusData.online) {
-                  setStatus({ message: `${data.message}\nDevice is online.`, isError: false });
-                  clearInterval(intervalId);
-                } else if (attempts >= maxAttempts) {
-                  setStatus({ message: `${data.message}\nDevice did not come online.`, isError: false });
-                  clearInterval(intervalId);
-                }
-              } catch (err) {
-                if (attempts >= maxAttempts) {
-                  setStatus({ message: `${data.message}\nError checking status.`, isError: true });
-                  clearInterval(intervalId);
-                }
-              }
-            };
-            const intervalId = setInterval(checkStatus, 2000);
-            checkStatus();
-          }
-        } else {
-          setStatus({ message: `Error: ${data.error}`, isError: true });
-        }
-      } catch (err) {
-        setStatus({ message: `Error: ${err.message}`, isError: true });
-      } finally {
-        setLoading(false);
-      }
-    };
-  };
-
   const updateHistory = (macToUpdate, deviceNameToUpdate, ipToUpdate) => {
     const targetMac = macToUpdate || mac;
     const targetDeviceName = deviceNameToUpdate || deviceName;
@@ -189,111 +126,156 @@ function App() {
   return (
     <div className='App'>
       <div className="container">
-        <h1>Wake on LAN</h1>
-        <div className="inputGroup">
-          <div>
-            <label htmlFor="macAddress">MAC Address</label>
-            <input
-              id="macAddress"
-              type="text"
-              placeholder="MAC Address (e.g., AA:BB:CC:DD:EE:FF)"
-              value={mac}
-              onChange={(e) => setMac(e.target.value)}
-              className="macInput"
-            />
-            {!validateMac(mac) && mac.length > 0 && (
-              <p className="error">Invalid MAC address format</p>
-            )}
-          </div>
-          <div>
-            <label htmlFor="deviceName">Device Name</label>
-            <input
-              id="deviceName"
-              type="text"
-              placeholder="Device Name (Optional)"
-              value={deviceName}
-              onChange={(e) => setDeviceName(e.target.value)}
-              className="deviceNameInput"
-            />
-          </div>
-          <div>
-            <label htmlFor="ipAddress">IP Address/Hostname</label>
-            <input
-              id="ipAddress"
-              type="text"
-              placeholder="IP Address or Hostname (e.g., 192.168.1.100)"
-              value={ipAddress}
-              onChange={(e) => setIpAddress(e.target.value)}
-              className="ipInput"
-            />
-          </div>
-          <button
-            onClick={handleWake}
-            disabled={loading || !mac}
-            className="wakeButton"
-          >
-            {loading ? 'Sending...' : 'Wake'}
-          </button>
-          <button
-            onClick={() => {
-              setMac('');
-              setDeviceName('');
-              setIpAddress('');
-              setStatus('');
-            }}
-            className="clearButton"
-          >
-            Clear
-          </button>
-        </div>
+        
+        <header className="appHeader">
+          <h1>Wake on LAN</h1>
+        </header>
 
-        {status && (
-          <div className={status.isError ? 'error' : 'success'}>
-            <div className="statusMessages">
-              {status.message.split('\n').map((msg, i) => (
-                <div key={i} className="statusLine">{msg}</div>
-              ))}
-            </div>
-          </div>
-        )}
-
-        {history.length > 0 && (
-          <div className="historySection">
-            <h3>Recent Devices</h3>
-            <div className="historyList">
-              {history.map((item, index) => (
-                <div key={index} className="historyItemContainer">
-                  <div className="historyItem">
-                    <span className="deviceName">{item.deviceName || 'Unknown Device'}</span>
-                    <span className="macAddress">{item.mac}</span>
-                    {item.ipAddress && (
-                      <div className="deviceStatus">
-                        <span className="ipAddress">IP: {item.ipAddress}</span>
-                        <span className={`statusIndicator ${deviceStatus[item.ipAddress] ? 'online' : 'offline'}`}>
-                          {deviceStatus[item.ipAddress] ? '🟢 Online' : '⚫ Offline'}
-                        </span>
-                      </div>
+        <div className="mainSection">
+          <div className="formCard">
+            <div className="formSections">
+              <div className="formSection">
+                <div className="inputGroup">
+                  <div className="inputWrapper">
+                    <label htmlFor="macAddress">MAC Address <span className="required">*</span></label>
+                    <input
+                      id="macAddress"
+                      type="text"
+                      placeholder="例: AA:BB:CC:DD:EE:FF"
+                      value={mac}
+                      onChange={(e) => setMac(e.target.value)}
+                      className="macInput"
+                      disabled={loading}
+                    />
+                    {!validateMac(mac) && mac.length > 0 && (
+                      <p className="inputError">無効なMACアドレス形式です</p>
                     )}
-                    <div className="historyActions">
-                      <button
-                        onClick={handleHistoryWake(item)}
-                        className="actionButton wakeAction"
-                      >
-                        Wake
-                      </button>
-                      <button
-                        onClick={() => handleRemoveHistoryItem(index)}
-                        className="actionButton removeAction"
-                      >
-                        Delete
-                      </button>
-                    </div>
                   </div>
                 </div>
-              ))}
+              </div>
+
+              <div className="formSection">
+                <div className="inputGroup">
+                  <div className="inputWrapper">
+                    <label htmlFor="deviceName">デバイス名</label>
+                    <input
+                      id="deviceName"
+                      type="text"
+                      placeholder="例: オフィスPC"
+                      value={deviceName}
+                      onChange={(e) => setDeviceName(e.target.value)}
+                      className="deviceNameInput"
+                      disabled={loading}
+                    />
+                  </div>
+
+                  <div className="inputWrapper">
+                    <label htmlFor="ipAddress">IPアドレス/ホスト名</label>
+                    <input
+                      id="ipAddress"
+                      type="text"
+                      placeholder="例: 192.168.1.100"
+                      value={ipAddress}
+                      onChange={(e) => setIpAddress(e.target.value)}
+                      className="ipInput"
+                      disabled={loading}
+                    />
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div className="buttonGroup">
+              <button
+                onClick={() => handleWake()}
+                disabled={loading || !mac}
+                className="wakeButton"
+              >
+                {loading ? (
+                  <span className="buttonContent">
+                    <span className="buttonSpinner" />
+                    送信中...
+                  </span>
+                ) : (
+                  '起動する'
+                )}
+              </button>
+              <button
+                onClick={() => {
+                  setMac('');
+                  setDeviceName('');
+                  setIpAddress('');
+                  setStatus('');
+                }}
+                className="clearButton"
+                disabled={loading}
+              >
+                クリア
+              </button>
             </div>
           </div>
-        )}
+
+          {status && (
+            <div className={`statusCard ${status.isError ? 'error' : 'success'}`}>
+              <div className="statusHeader">
+                <span className="statusIcon">{status.isError ? '❌' : '✅'}</span>
+                <span className="statusTitle">{status.isError ? 'エラー' : '成功'}</span>
+              </div>
+              <div className="statusMessages">
+                {status.message.split('\n').map((msg, i) => (
+                  <div key={i} className="statusLine">{msg}</div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {history.length > 0 && (
+            <div className="historyCard">
+              <div className="historyHeader">
+                <h2 className="sectionTitle">使用したデバイス</h2>
+                <div className="historyHeaderActions">
+                  <span className="historyCount">{history.length} デバイス</span>
+                </div>
+              </div>
+              <div className="historyGrid">
+                {history.map((item, index) => (
+                  <div key={index} className="historyItemContainer">
+                    <div className="historyItem">
+                      <div className="itemHeader">
+                        <span className="deviceName">{item.deviceName || 'Unknown Device'}</span>
+                        {item.ipAddress && (
+                          <span className={`statusBadge ${deviceStatus[item.ipAddress] ? 'online' : 'offline'}`}>
+                            {deviceStatus[item.ipAddress] ? '🟢 オンライン' : '⚫ オフライン'}
+                          </span>
+                        )}
+                      </div>
+                      <div className="itemDetails">
+                        <span className="macAddress">MAC: {item.mac}</span>
+                        {item.ipAddress && (
+                          <span className="ipAddress">IP: {item.ipAddress}</span>
+                        )}
+                      </div>
+                      <div className="historyActions">
+                        <button
+                          onClick={() => handleWake(item.mac, item.deviceName, item.ipAddress)}
+                          className="actionButton wakeAction"
+                        >
+                          起動
+                        </button>
+                        <button
+                          onClick={() => handleRemoveHistoryItem(index)}
+                          className="actionButton removeAction"
+                        >
+                          削除
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+        </div>
       </div>
     </div>
   );

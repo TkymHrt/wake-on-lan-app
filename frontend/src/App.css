@@ -15,26 +15,58 @@
   --history-bg: rgba(100, 108, 255, 0.1);
   --history-item-bg: #f5f5f5;
   --border-color: rgba(0, 0, 0, 0.1);
+  --card-bg: #ffffff;
+  --history-count-bg: rgba(0, 0, 0, 0.05);
+  --section-bg: rgba(0, 0, 0, 0.02);
+  --focus-outline: rgba(100, 108, 255, 0.5);
 }
 
 @media (prefers-color-scheme: dark) {
   :root {
     --primary-color: #7b82ff;
     --primary-hover: #898fff;
-    --background: #242424;
+    --background: #1a1a1a;
     --text-primary: #f0f0f0;
-    --text-secondary: #999999;
-    --input-border: #555555;
-    --input-bg: #333333;
-    --button-disabled-bg: #444444;
-    --button-disabled-text: #888888;
+    --text-secondary: #a0a0a0;
+    --input-border: #404040;
+    --input-bg: #2a2a2a;
+    --button-disabled-bg: #333333;
+    --button-disabled-text: #666666;
     --success-bg: rgba(22, 163, 74, 0.2);
-    --success-color: #22c55e;
+    --success-color: #4ade80;
     --error-bg: rgba(220, 38, 38, 0.2);
-    --error-color: #ef4444;
-    --history-bg: rgba(100, 108, 255, 0.2);
+    --error-color: #f87171;
+    --history-bg: rgba(123, 130, 255, 0.15);
     --history-item-bg: #2a2a2a;
     --border-color: rgba(255, 255, 255, 0.1);
+    --card-bg: #242424;
+    --history-count-bg: rgba(255, 255, 255, 0.1);
+    --section-bg: rgba(255, 255, 255, 0.03);
+    --focus-outline: rgba(123, 130, 255, 0.6);
+  }
+
+  /* ダークモードでのテキスト可読性を向上 */
+  .inputHelp,
+  .statusMessages,
+  .historyCount {
+    color: var(--text-secondary);
+  }
+
+  /* ダークモードでのカード視認性を向上 */
+  .formCard,
+  .historyCard,
+  .statusCard {
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+  }
+
+  /* ダークモードでのフォーカス表示を強調 */
+  .macInput:focus,
+  .deviceNameInput:focus,
+  .ipInput:focus,
+  .wakeButton:focus,
+  .clearButton:focus,
+  .actionButton:focus {
+    box-shadow: 0 0 0 3px var(--background), 0 0 0 6px var(--focus-outline);
   }
 }
 
@@ -56,11 +88,35 @@
   border-radius: 1rem;
   background-color: var(--background);
   color: var(--text-primary);
+  scroll-behavior: smooth;
+  scroll-padding-top: 2rem;
 }
 
 @media screen and (min-width: 768px) {
   .container {
     max-width: 400px;
+  }
+}
+
+@media screen and (max-width: 768px) {
+  .container {
+    width: calc(100% - 2rem);
+    margin: 1rem;
+    padding: 1rem;
+  }
+
+  .historyGrid {
+    grid-template-columns: 1fr;
+  }
+
+  .buttonGroup {
+    flex-direction: column;
+  }
+
+  .historyHeaderActions {
+    flex-direction: column;
+    align-items: flex-end;
+    gap: 0.5rem;
   }
 }
 
@@ -73,7 +129,6 @@
   display: flex;
   flex-direction: column;
   gap: 0.5rem;
-  margin-bottom: 1rem;
   max-width: 500px;
   margin-inline: auto;
 }
@@ -126,7 +181,6 @@
   background-color: var(--primary-color);
   color: var(--background);
   border: none;
-  margin-top: 1rem;
 }
 
 .wakeButton:hover:not(:disabled) {
@@ -313,4 +367,364 @@
   background-color: var(--error-color);
   color: var(--background);
   transform: scale(1.05);
+}
+
+.appHeader {
+  text-align: center;
+  margin-bottom: 2rem;
+}
+
+.appDescription {
+  color: var(--text-secondary);
+  margin-top: 0.5rem;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.mainSection {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+}
+
+.formCard,
+.historyCard,
+.statusCard {
+  background-color: var(--card-bg);
+  border-radius: 12px;
+  padding: 1.5rem;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.sectionTitle {
+  font-size: 1.25rem;
+  color: var(--text-primary);
+  white-space: nowrap;
+}
+
+.inputWrapper {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.inputHelp {
+  color: var(--text-secondary);
+  font-size: 0.8rem;
+  margin-top: -0.2rem;
+}
+
+.inputError {
+  color: var(--error-color);
+  font-size: 0.8rem;
+  margin: 0;
+}
+
+.required {
+  color: var(--error-color);
+}
+
+.buttonGroup {
+  display: flex;
+  gap: 1rem;
+  margin-top: 1.5rem;
+}
+
+.statusCard {
+  border: 1px solid;
+}
+
+.statusCard.success {
+  border-color: var(--success-color);
+}
+
+.statusCard.error {
+  border-color: var(--error-color);
+}
+
+.statusHeader {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-bottom: 0.5rem;
+}
+
+.statusTitle {
+  font-weight: 600;
+}
+
+.historyHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1rem;
+}
+
+.historyCount {
+  font-size: 0.9rem;
+  color: var(--text-secondary);
+  padding: 0.3rem 0.8rem;
+  background-color: var(--history-count-bg);
+  border-radius: 1rem;
+  white-space: nowrap;
+}
+
+.historyGrid {
+  display: grid;
+  gap: 1rem;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+}
+
+.historyItem {
+  background-color: var(--history-item-bg);
+  border-radius: 8px;
+  padding: 1rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.8rem;
+  transition: transform 0.2s ease;
+}
+
+.historyItem:hover {
+  transform: translateY(-2px);
+}
+
+.itemHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 1rem;
+}
+
+.itemDetails {
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+  font-size: 0.85rem;
+  color: var(--text-secondary);
+}
+
+.statusBadge {
+  font-size: 0.75rem;
+  padding: 0.25rem 0.6rem;
+  border-radius: 1rem;
+  white-space: nowrap;
+}
+
+.statusBadge.online {
+  background-color: var(--success-bg);
+  color: var(--success-color);
+}
+
+.statusBadge.offline {
+  background-color: var(--error-bg);
+  color: var(--error-color);
+}
+
+.cardHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1.5rem;
+}
+
+.formSections {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.formSection {
+  padding: 1.5rem;
+  background-color: var(--section-bg);
+  border-radius: 8px;
+  border: 1px solid var(--border-color);
+}
+
+.formSectionTitle {
+  font-size: 1.1rem;
+  margin: 0 0 1rem 0;
+  color: var(--text-primary);
+}
+
+/* スピナーのアニメーション */
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.spinner {
+  width: 24px;
+  height: 24px;
+  border: 3px solid var(--primary-color);
+  border-top-color: transparent;
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+}
+
+.buttonContent {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  justify-content: center;
+}
+
+.buttonSpinner {
+  width: 16px;
+  height: 16px;
+  border: 2px solid var(--background);
+  border-top-color: transparent;
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+}
+
+/* レスポンシブ対応の強化 */
+@media screen and (max-width: 768px) {
+  .formSection {
+    padding: 1rem;
+  }
+
+  .buttonContent {
+    width: 100%;
+  }
+
+  .keyboardHelp {
+    display: none;
+  }
+}
+
+/* フォーム要素の無効状態のスタイル */
+input:disabled {
+  opacity: 0.7;
+  cursor: not-allowed;
+}
+
+/* ボタンのホバーエフェクトの改善 */
+.wakeButton,
+.clearButton {
+  transition: all 0.2s ease-in-out;
+}
+
+.wakeButton:not(:disabled):hover,
+.clearButton:not(:disabled):hover {
+  transform: translateY(-2px);
+}
+
+.navigationButtons {
+  display: flex;
+  justify-content: center;
+  margin: 1rem 0;
+}
+
+.navButton {
+  background: none;
+  border: none;
+  color: var(--primary-color);
+  padding: 0.5rem 1rem;
+  cursor: pointer;
+  font-size: 0.9rem;
+  border-radius: 20px;
+  transition: all 0.2s ease;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.navButton:hover {
+  background-color: var(--history-bg);
+  transform: translateY(-1px);
+}
+
+.historyHeaderActions {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+
+/* ダークモード対応 */
+@media (prefers-color-scheme: dark) {
+  .navButton:hover {
+    background-color: var(--section-bg);
+  }
+}
+
+.macInput:focus,
+.deviceNameInput:focus,
+.ipInput:focus,
+.wakeButton:focus,
+.clearButton:focus,
+.navButton:focus,
+.actionButton:focus {
+  outline: none;
+  box-shadow: 0 0 0 3px var(--background), 0 0 0 6px var(--primary-color);
+}
+
+/* タブでの移動をより視認しやすく */
+:focus-visible {
+  outline: none;
+  border-radius: 4px;
+}
+
+/* フォームのラベルをよりクリックしやすく */
+label {
+  cursor: pointer;
+}
+
+/* ボタンのアクセシビリティ改善 */
+.wakeButton,
+.clearButton,
+.navButton,
+.actionButton {
+  position: relative;
+  overflow: hidden;
+}
+
+.wakeButton:after,
+.clearButton:after,
+.navButton:after,
+.actionButton:after {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 0;
+  height: 0;
+  background: rgba(255, 255, 255, 0.2);
+  border-radius: 50%;
+  transform: translate(-50%, -50%);
+  opacity: 0;
+  transition: width 0.3s, height 0.3s, opacity 0.3s;
+}
+
+.wakeButton:active:after,
+.clearButton:active:after,
+.navButton:active:after,
+.actionButton:active:after {
+  width: 100%;
+  height: 100%;
+  opacity: 1;
+  transition: 0s;
+}
+
+/* モバイルでのタッチ操作改善 */
+@media (hover: none) {
+
+  .wakeButton,
+  .clearButton,
+  .navButton,
+  .actionButton {
+    cursor: default;
+    -webkit-tap-highlight-color: transparent;
+  }
+}
+
+.keyboardHelp {
+  font-size: 0.8rem;
+  color: var(--text-secondary);
+  opacity: 0.8;
+  margin-top: 0.5rem;
+  display: block;
 }
