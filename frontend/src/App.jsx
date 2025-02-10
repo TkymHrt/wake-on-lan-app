@@ -6,9 +6,11 @@ const MAX_HISTORY_ITEMS = 5;
 function App() {
   const [mac, setMac] = useState('');
   const [deviceName, setDeviceName] = useState('');
+  const [ipAddress, setIpAddress] = useState('');
   const [status, setStatus] = useState('');
   const [loading, setLoading] = useState(false);
   const [history, setHistory] = useState([]);
+  const [deviceStatus, setDeviceStatus] = useState({});
 
   useEffect(() => {
     const savedHistory = localStorage.getItem('wolHistory');
@@ -21,6 +23,33 @@ function App() {
     localStorage.setItem('wolHistory', JSON.stringify(history));
   }, [history]);
 
+  useEffect(() => {
+    const checkAllDevicesStatus = async () => {
+      const newStatus = { ...deviceStatus };
+      for (const item of history) {
+        if (item.ipAddress) {
+          try {
+            const res = await fetch(`/api/status?ip=${encodeURIComponent(item.ipAddress)}`);
+            if (res.ok) {
+              const data = await res.json();
+              newStatus[item.ipAddress] = data.online;
+            }
+          } catch (err) {
+            console.error(`Error checking status for ${item.ipAddress}:`, err);
+          }
+        }
+      }
+      setDeviceStatus(newStatus);
+    };
+
+    // Initial check
+    checkAllDevicesStatus();
+
+    // Set up periodic checking every 30 seconds
+    const intervalId = setInterval(checkAllDevicesStatus, 30000);
+
+    return () => clearInterval(intervalId);
+  }, [history]);
 
   const validateMac = (mac) => {
     const regex = /^([0-9A-Fa-f]{2}[:-]){5}([0-9A-Fa-f]{2})$/;
@@ -39,8 +68,36 @@ function App() {
       const res = await fetch(`/api/wake?mac=${mac}`);
       const data = await res.json();
       if (res.ok) {
-        updateHistory();
+        updateHistory(mac, deviceName, ipAddress);
         setStatus({ message: data.message, isError: false });
+
+        if (ipAddress) {
+          let attempts = 0;
+          const maxAttempts = 10;
+          const checkStatus = async () => {
+            attempts++;
+            console.log(`Checking status... Attempt ${attempts}`);
+            try {
+              const statusRes = await fetch(`/api/status?ip=${encodeURIComponent(ipAddress)}`);
+              if (!statusRes.ok) throw new Error('Failed to check status');
+              const statusData = await statusRes.json();
+              if (statusData.online) {
+                setStatus(prev => ({ ...prev, message: `${prev.message} Device is online.` }));
+                clearInterval(intervalId);
+              } else if (attempts >= maxAttempts) {
+                setStatus(prev => ({ ...prev, message: `${prev.message} Device did not come online.` }));
+                clearInterval(intervalId);
+              }
+            } catch (err) {
+              if (attempts >= maxAttempts) {
+                setStatus(prev => ({ ...prev, message: `${prev.message} Error checking status.` }));
+                clearInterval(intervalId);
+              }
+            }
+          };
+          const intervalId = setInterval(checkStatus, 2000);
+          checkStatus();
+        }
       } else {
         setStatus({ message: `Error: ${data.error}`, isError: true });
       }
@@ -51,23 +108,53 @@ function App() {
     }
   };
 
-  const handleHistoryWake = (mac, deviceName) => {
+  const handleHistoryWake = (item) => {
     return async () => {
-      if (!validateMac(mac)) {
-        setStatus({ message: 'Error: Invalid MAC address format (use XX:XX:XX:XX:XX:XX)', isError: true });
+      setMac(item.mac);
+      setDeviceName(item.deviceName);
+      setIpAddress(item.ipAddress || '');
+
+      if (!validateMac(item.mac)) {
+        setStatus({ message: 'Error: Invalid MAC address format', isError: true });
         return;
       }
 
       setLoading(true);
       setStatus(null);
       try {
-        const res = await fetch(`/api/wake?mac=${mac}`);
+        const res = await fetch(`/api/wake?mac=${item.mac}`);
         const data = await res.json();
         if (res.ok) {
-          updateHistory(mac, deviceName);
-          setMac(mac);
-          setDeviceName(deviceName);
+          updateHistory(item.mac, item.deviceName, item.ipAddress);
           setStatus({ message: data.message, isError: false });
+
+          if (item.ipAddress) {
+            let attempts = 0;
+            const maxAttempts = 10;
+            const checkStatus = async () => {
+              attempts++;
+              console.log(`Checking status... Attempt ${attempts}`);
+              try {
+                const statusRes = await fetch(`/api/status?ip=${encodeURIComponent(item.ipAddress)}`);
+                if (!statusRes.ok) throw new Error('Failed to check status');
+                const statusData = await statusRes.json();
+                if (statusData.online) {
+                  setStatus(prev => ({ ...prev, message: `${prev.message} Device is online.` }));
+                  clearInterval(intervalId);
+                } else if (attempts >= maxAttempts) {
+                  setStatus(prev => ({ ...prev, message: `${prev.message} Device did not come online.` }));
+                  clearInterval(intervalId);
+                }
+              } catch (err) {
+                if (attempts >= maxAttempts) {
+                  setStatus(prev => ({ ...prev, message: `${prev.message} Error checking status.` }));
+                  clearInterval(intervalId);
+                }
+              }
+            };
+            const intervalId = setInterval(checkStatus, 2000);
+            checkStatus();
+          }
         } else {
           setStatus({ message: `Error: ${data.error}`, isError: true });
         }
@@ -79,28 +166,23 @@ function App() {
     };
   };
 
-  const updateHistory = (macToUpdate, deviceNameToUpdate) => {
+  const updateHistory = (macToUpdate, deviceNameToUpdate, ipToUpdate) => {
     const targetMac = macToUpdate || mac;
     const targetDeviceName = deviceNameToUpdate || deviceName;
+    const targetIp = ipToUpdate || ipAddress;
 
     const existingIndex = history.findIndex(item => item.mac === targetMac);
-    if (existingIndex > -1) {
-      const newHistory = [...history];
-      newHistory[existingIndex] = {
-        mac: targetMac,
-        deviceName: targetDeviceName || history[existingIndex].deviceName
-      };
-      newHistory.sort((a, b) => (a.mac === targetMac ? -1 : b.mac === targetMac ? 1 : 0));
-      setHistory(newHistory);
-    } else {
-      const newHistory = [{ mac: targetMac, deviceName: targetDeviceName }, ...history].slice(0, MAX_HISTORY_ITEMS);
-      setHistory(newHistory);
-    }
+    const newItem = { mac: targetMac, deviceName: targetDeviceName, ipAddress: targetIp };
+
+    const newHistory = existingIndex > -1
+      ? history.map((item, idx) => idx === existingIndex ? newItem : item)
+      : [newItem, ...history].slice(0, MAX_HISTORY_ITEMS);
+
+    setHistory(newHistory);
   };
 
   const handleRemoveHistoryItem = (index) => {
-    const newHistory = [...history];
-    newHistory.splice(index, 1);
+    const newHistory = history.filter((_, i) => i !== index);
     setHistory(newHistory);
   };
 
@@ -134,11 +216,21 @@ function App() {
               className="deviceNameInput"
             />
           </div>
+          <div>
+            <label htmlFor="ipAddress">IP Address/Hostname</label>
+            <input
+              id="ipAddress"
+              type="text"
+              placeholder="IP Address or Hostname (e.g., 192.168.1.100)"
+              value={ipAddress}
+              onChange={(e) => setIpAddress(e.target.value)}
+              className="ipInput"
+            />
+          </div>
           <button
             onClick={handleWake}
             disabled={loading || !mac}
             className="wakeButton"
-            aria-label="Wake"
           >
             {loading ? 'Sending...' : 'Wake'}
           </button>
@@ -146,10 +238,10 @@ function App() {
             onClick={() => {
               setMac('');
               setDeviceName('');
+              setIpAddress('');
               setStatus('');
             }}
             className="clearButton"
-            aria-label="Clear inputs"
           >
             Clear
           </button>
@@ -170,18 +262,24 @@ function App() {
                   <div className="historyItem">
                     <span className="deviceName">{item.deviceName || 'Unknown Device'}</span>
                     <span className="macAddress">{item.mac}</span>
+                    {item.ipAddress && (
+                      <div className="deviceStatus">
+                        <span className="ipAddress">IP: {item.ipAddress}</span>
+                        <span className={`statusIndicator ${deviceStatus[item.ipAddress] ? 'online' : 'offline'}`}>
+                          {deviceStatus[item.ipAddress] ? '🟢 Online' : '⚫ Offline'}
+                        </span>
+                      </div>
+                    )}
                     <div className="historyActions">
                       <button
-                        onClick={handleHistoryWake(item.mac, item.deviceName)}
+                        onClick={handleHistoryWake(item)}
                         className="actionButton wakeAction"
-                        aria-label="Wake device"
                       >
                         Wake
                       </button>
                       <button
                         onClick={() => handleRemoveHistoryItem(index)}
                         className="actionButton removeAction"
-                        aria-label="Remove from history"
                       >
                         Delete
                       </button>

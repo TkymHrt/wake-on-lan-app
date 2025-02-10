@@ -72,8 +72,8 @@
 .inputGroup {
   display: flex;
   flex-direction: column;
-  gap: 1.2rem;
-  margin-bottom: 2rem;
+  gap: 0.5rem;
+  margin-bottom: 1rem;
   max-width: 500px;
   margin-inline: auto;
 }
@@ -92,7 +92,8 @@
 }
 
 .macInput,
-.deviceNameInput {
+.deviceNameInput,
+.ipInput {
   flex: 1;
   min-width: 200px;
   padding: 0.75rem;
@@ -106,7 +107,8 @@
 }
 
 .macInput:focus,
-.deviceNameInput:focus {
+.deviceNameInput:focus,
+.ipInput:focus {
   border-color: var(--primary-color);
   outline: none;
 }
@@ -124,6 +126,7 @@
   background-color: var(--primary-color);
   color: var(--background);
   border: none;
+  margin-top: 1rem;
 }
 
 .wakeButton:hover:not(:disabled) {
@@ -178,7 +181,7 @@
 }
 
 .historySection {
-  margin-top: 2rem;
+  margin-top: 1rem;
   padding: 1rem;
   background-color: var(--history-bg);
   border-radius: 8px;
@@ -225,7 +228,34 @@
   display: block;
   font-size: 0.8rem;
   color: var(--text-secondary);
-  margin-bottom: 0.5rem;
+}
+
+.deviceStatus {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.8rem;
+  color: var(--text-secondary);
+}
+
+.statusIndicator {
+  padding: 0.2rem 0.5rem;
+  border-radius: 12px;
+  font-size: 0.75rem;
+  display: flex;
+  align-items: center;
+  gap: 0.3rem;
+}
+
+.statusIndicator.online {
+  background-color: var(--success-bg);
+  color: var(--success-color);
+}
+
+.statusIndicator.offline {
+  background-color: var(--error-bg);
+  color: var(--error-color);
 }
 
 .historyActions {
@@ -251,7 +281,6 @@
   color: var(--text-primary);
   font-weight: 500;
 }
-
 
 .wakeAction {
   border-color: var(--primary-color);

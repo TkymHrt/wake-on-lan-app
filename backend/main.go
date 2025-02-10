@@ -8,6 +8,10 @@ import (
 	"net"
 	"net/http"
 	"os"
+	"os/exec"
+	"runtime"
+	"strings"
+	"time"
 )
 
 var (
@@ -74,6 +78,89 @@ func wolHandler(w http.ResponseWriter, r *http.Request) {
 	json.NewEncoder(w).Encode(map[string]string{"message": "WoL packet sent to " + mac})
 }
 
+// statusHandler checks if a device is online using multiple methods
+func statusHandler(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Type", "application/json")
+	ip := r.URL.Query().Get("ip")
+	if ip == "" {
+		w.WriteHeader(http.StatusBadRequest)
+		json.NewEncoder(w).Encode(map[string]interface{}{
+			"error": "IP address required",
+			"online": false,
+		})
+		return
+	}
+
+	// Resolve hostname to IP if needed
+	ips, err := net.LookupHost(ip)
+	if err != nil {
+		// If lookup fails, try using the IP directly
+		ips = []string{ip}
+	}
+
+	targetIP := ips[0]
+	online, method := isOnline(targetIP)
+	
+	response := map[string]interface{}{
+		"online": online,
+		"method": method,
+	}
+	json.NewEncoder(w).Encode(response)
+}
+
+// isOnline uses multiple methods to check if a host is online
+func isOnline(ip string) (bool, string) {
+	// Try ICMP ping first
+	if pingHost(ip) {
+		return true, "ping"
+	}
+
+	// Try common ports
+	ports := []int{
+		7,    // Echo
+		22,   // SSH
+		80,   // HTTP
+		443,  // HTTPS
+		3389, // RDP
+		445,  // SMB
+		139,  // NetBIOS
+	}
+	
+	timeout := 2 * time.Second
+	for _, port := range ports {
+		target := fmt.Sprintf("%s:%d", ip, port)
+		conn, err := net.DialTimeout("tcp", target, timeout)
+		if err == nil {
+			conn.Close()
+			return true, fmt.Sprintf("port %d", port)
+		}
+	}
+
+	return false, "none"
+}
+
+// pingHost attempts to ping the target host
+func pingHost(ip string) bool {
+	var cmd *exec.Cmd
+	
+	switch runtime.GOOS {
+	case "windows":
+		cmd = exec.Command("ping", "-n", "1", "-w", "1000", ip)
+	default: // Linux and macOS
+		cmd = exec.Command("ping", "-c", "1", "-W", "1", ip)
+	}
+	
+	output, err := cmd.Output()
+	if err != nil {
+		return false
+	}
+	
+	// Check if ping was successful
+	return strings.Contains(string(output), "1 received") || 
+	       strings.Contains(string(output), "1 packets received") ||
+	       strings.Contains(string(output), "bytes from")
+}
+
 func main() {
 	flag.Parse()
 
@@ -81,8 +168,9 @@ func main() {
 	fs := http.FileServer(http.Dir("../frontend/dist"))
 	http.Handle("/", fs)
 
-	// API endpoint
+	// API endpoints
 	http.HandleFunc("/api/wake", enableCORS(wolHandler))
+	http.HandleFunc("/api/status", enableCORS(statusHandler))
 
 	// Start server
 	addr := fmt.Sprintf("%s:%s", *host, *port)
