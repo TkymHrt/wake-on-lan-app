@@ -83,7 +83,7 @@ function App() {
                 setStatus({ message: `${data.message}\nDevice did not come online.`, isError: false });
                 clearInterval(intervalId);
               }
-            } catch (err) {
+            } catch {
               if (attempts >= maxAttempts) {
                 setStatus({ message: `${data.message}\nError checking status.`, isError: true });
                 clearInterval(intervalId);
