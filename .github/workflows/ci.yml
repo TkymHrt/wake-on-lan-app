@@ -8,7 +8,7 @@ on:
 
 jobs:
   frontend-test-and-build:
-    runs-on: ubuntu-latest
+    runs-on: self-hosted
 
     strategy:
       matrix:
@@ -60,7 +60,7 @@ jobs:
           ${{ runner.os }}-pnpm-
 
   backend-test-and-build:
-    runs-on: ubuntu-latest
+    runs-on: self-hosted
 
     strategy:
       matrix:
@@ -126,7 +126,7 @@ jobs:
       working-directory: ./backend
 
   integration-test:
-    runs-on: ubuntu-latest
+    runs-on: self-hosted
     needs: [frontend-test-and-build, backend-test-and-build]
 
     steps:
@@ -193,7 +193,7 @@ jobs:
       if: always()
 
   security-scan:
-    runs-on: ubuntu-latest
+    runs-on: self-hosted
     needs: [frontend-test-and-build, backend-test-and-build, integration-test]
 
     steps:
