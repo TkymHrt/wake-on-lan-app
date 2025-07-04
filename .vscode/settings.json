@@ -1,6 +1,9 @@
 {
 	"editor.formatOnSave": true,
 	"editor.defaultFormatter": "biomejs.biome",
+  "biome.lsp.bin": "frontend/node_modules/@biomejs/biome/bin/biome",
+	    "source.organizeImports.biome": "explicit",
+
 	"editor.codeActionsOnSave": {
 		"quickfix.biome": "explicit",
 		"source.organizeImports.biome": "explicit"
