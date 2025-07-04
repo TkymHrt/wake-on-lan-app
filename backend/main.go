@@ -49,12 +49,12 @@ func enableCORS(next http.HandlerFunc) http.HandlerFunc {
 		w.Header().Set("Access-Control-Allow-Origin", "*")
 		w.Header().Set("Access-Control-Allow-Methods", "GET, POST, OPTIONS")
 		w.Header().Set("Access-Control-Allow-Headers", "Content-Type")
-		
+
 		if r.Method == "OPTIONS" {
 			w.WriteHeader(http.StatusOK)
 			return
 		}
-		
+
 		next(w, r)
 	}
 }
@@ -62,7 +62,7 @@ func enableCORS(next http.HandlerFunc) http.HandlerFunc {
 // API endpoint handler
 func wolHandler(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
-	
+
 	mac := r.URL.Query().Get("mac")
 	if mac == "" {
 		json.NewEncoder(w).Encode(map[string]string{"error": "MAC address required"})
@@ -85,7 +85,7 @@ func statusHandler(w http.ResponseWriter, r *http.Request) {
 	if ip == "" {
 		w.WriteHeader(http.StatusBadRequest)
 		json.NewEncoder(w).Encode(map[string]interface{}{
-			"error": "IP address required",
+			"error":  "IP address required",
 			"online": false,
 		})
 		return
@@ -100,7 +100,7 @@ func statusHandler(w http.ResponseWriter, r *http.Request) {
 
 	targetIP := ips[0]
 	online, method := isOnline(targetIP)
-	
+
 	response := map[string]interface{}{
 		"online": online,
 		"method": method,
@@ -125,10 +125,10 @@ func isOnline(ip string) (bool, string) {
 		445,  // SMB
 		139,  // NetBIOS
 	}
-	
+
 	timeout := 2 * time.Second
 	for _, port := range ports {
-		target := fmt.Sprintf("%s:%d", ip, port)
+		target := net.JoinHostPort(ip, fmt.Sprintf("%d", port))
 		conn, err := net.DialTimeout("tcp", target, timeout)
 		if err == nil {
 			conn.Close()
@@ -142,23 +142,23 @@ func isOnline(ip string) (bool, string) {
 // pingHost attempts to ping the target host
 func pingHost(ip string) bool {
 	var cmd *exec.Cmd
-	
+
 	switch runtime.GOOS {
 	case "windows":
 		cmd = exec.Command("ping", "-n", "1", "-w", "1000", ip)
 	default: // Linux and macOS
 		cmd = exec.Command("ping", "-c", "1", "-W", "1", ip)
 	}
-	
+
 	output, err := cmd.Output()
 	if err != nil {
 		return false
 	}
-	
+
 	// Check if ping was successful
-	return strings.Contains(string(output), "1 received") || 
-	       strings.Contains(string(output), "1 packets received") ||
-	       strings.Contains(string(output), "bytes from")
+	return strings.Contains(string(output), "1 received") ||
+		strings.Contains(string(output), "1 packets received") ||
+		strings.Contains(string(output), "bytes from")
 }
 
 func main() {
