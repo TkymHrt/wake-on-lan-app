@@ -15,7 +15,8 @@
 		"check:fix": "pnpm exec biome check --write"
 	},
 	"dependencies": {
-		"preact": "^10.26.9"
+		"preact": "^10.26.9",
+		"react-toastify": "^11.0.5"
 	},
 	"devDependencies": {
 		"@biomejs/biome": "2.0.6",
