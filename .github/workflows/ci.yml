@@ -81,12 +81,17 @@ jobs:
         path: |
           ~/.cache/go-build
           ~/go/pkg/mod
-        key: ${{ runner.os }}-go-${{ matrix.go-version }}-${{ hashFiles('backend/go.mod') }}
+        key: ${{ runner.os }}-go-${{ matrix.go-version }}-${{ hashFiles('backend/go.mod', 'backend/go.sum') }}
         restore-keys: |
           ${{ runner.os }}-go-${{ matrix.go-version }}-
+          ${{ runner.os }}-go-
 
     - name: Download dependencies
       run: go mod download
+      working-directory: ./backend
+
+    - name: Generate go.sum if missing
+      run: go mod tidy
       working-directory: ./backend
 
     - name: Verify dependencies
@@ -154,20 +159,29 @@ jobs:
       working-directory: ./frontend
 
     - name: Build backend
-      run: go build -o wol-server
+      run: go build -o wol-server .
       working-directory: ./backend
 
     - name: Start backend server
       run: |
         ./wol-server -port 8080 &
         echo $! > server.pid
-        sleep 2
+        sleep 5
       working-directory: ./backend
 
-    - name: Test server health
+    - name: Test server response
       run: |
-        curl -f http://localhost:8080/health || exit 1
-      continue-on-error: true
+        # Test if server is running by checking if it responds to requests
+        for i in {1..10}; do
+          if curl -s http://localhost:8080/ > /dev/null 2>&1; then
+            echo "Server is responding"
+            exit 0
+          fi
+          echo "Attempt $i: Server not yet ready, waiting..."
+          sleep 1
+        done
+        echo "Server failed to start properly"
+        exit 1
 
     - name: Stop server
       run: |
@@ -176,6 +190,7 @@ jobs:
           rm server.pid
         fi
       working-directory: ./backend
+      if: always()
 
   security-scan:
     runs-on: ubuntu-latest
@@ -196,6 +211,11 @@ jobs:
         node-version: '20.x'
         cache: 'pnpm'
         cache-dependency-path: './frontend/pnpm-lock.yaml'
+
+    - name: Setup Go
+      uses: actions/setup-go@v4
+      with:
+        go-version: '1.24.x'
 
     - name: Cache dependencies
       uses: actions/cache@v4
