@@ -1,26 +1,724 @@
-#app {
-  max-width: 1280px;
-  margin: 0 auto;
-  padding: 2rem;
-  text-align: center;
+:root {
+	--primary-color: #646cff;
+	--primary-hover: #5058cc;
+	--background: #ffffff;
+	--text-primary: #333333;
+	--text-secondary: #666666;
+	--input-border: #cccccc;
+	--input-bg: #ffffff;
+	--button-disabled-bg: #cccccc;
+	--button-disabled-text: #666666;
+	--success-bg: #f0fdf4;
+	--success-color: #16a34a;
+	--error-bg: #fef2f2;
+	--error-color: #dc2626;
+	--history-bg: rgba(100, 108, 255, 0.1);
+	--history-item-bg: #f5f5f5;
+	--border-color: rgba(0, 0, 0, 0.1);
+	--card-bg: #ffffff;
+	--history-count-bg: rgba(0, 0, 0, 0.05);
+	--section-bg: rgba(0, 0, 0, 0.02);
+	--focus-outline: rgba(100, 108, 255, 0.5);
 }
 
-.logo {
-  height: 6em;
-  padding: 1.5em;
-  will-change: filter;
-}
-.logo:hover {
-  filter: drop-shadow(0 0 2em #646cffaa);
-}
-.logo.preact:hover {
-  filter: drop-shadow(0 0 2em #673ab8aa);
+@media (prefers-color-scheme: dark) {
+	:root {
+		--primary-color: #7b82ff;
+		--primary-hover: #898fff;
+		--background: #1a1a1a;
+		--text-primary: #f0f0f0;
+		--text-secondary: #a0a0a0;
+		--input-border: #404040;
+		--input-bg: #2a2a2a;
+		--button-disabled-bg: #333333;
+		--button-disabled-text: #666666;
+		--success-bg: rgba(22, 163, 74, 0.2);
+		--success-color: #4ade80;
+		--error-bg: rgba(220, 38, 38, 0.2);
+		--error-color: #f87171;
+		--history-bg: rgba(123, 130, 255, 0.15);
+		--history-item-bg: #2a2a2a;
+		--border-color: rgba(255, 255, 255, 0.1);
+		--card-bg: #242424;
+		--history-count-bg: rgba(255, 255, 255, 0.1);
+		--section-bg: rgba(255, 255, 255, 0.03);
+		--focus-outline: rgba(123, 130, 255, 0.6);
+	}
+
+	.inputHelp,
+	.statusMessages,
+	.historyCount {
+		color: var(--text-secondary);
+	}
+
+	.formCard,
+	.historyCard,
+	.statusCard {
+		box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+	}
+
+	.macInput:focus,
+	.deviceNameInput:focus,
+	.ipInput:focus,
+	.wakeButton:focus,
+	.clearButton:focus,
+	.actionButton:focus {
+		box-shadow:
+			0 0 0 3px var(--background),
+			0 0 0 6px var(--focus-outline);
+	}
 }
 
-.card {
-  padding: 2em;
+.App {
+	width: 100vw;
+	min-height: 100dvh;
+	display: grid;
+	place-items: center;
+	background-color: var(--background);
+	color: var(--text-primary);
 }
 
-.read-the-docs {
-  color: #888;
+.container {
+	width: calc(100% - 4rem);
+	margin: 2rem;
+	padding: 2rem;
+	text-align: center;
+	font-family: sans-serif;
+	border-radius: 1rem;
+	background-color: var(--background);
+	color: var(--text-primary);
+	scroll-behavior: smooth;
+	scroll-padding-top: 2rem;
+}
+
+@media screen and (min-width: 768px) {
+	.container {
+		max-width: 400px;
+	}
+}
+
+@media screen and (max-width: 768px) {
+	.container {
+		width: calc(100% - 2rem);
+		margin: 1rem;
+		padding: 1rem;
+	}
+
+	.historyGrid {
+		grid-template-columns: 1fr;
+	}
+
+	.buttonGroup {
+		flex-direction: column;
+	}
+
+	.historyHeaderActions {
+		flex-direction: column;
+		align-items: flex-end;
+		gap: 0.5rem;
+	}
+}
+
+.container h1 {
+	margin-bottom: 1rem;
+	color: var(--text-primary);
+}
+
+.inputGroup {
+	display: flex;
+	flex-direction: column;
+	gap: 0.5rem;
+	max-width: 500px;
+	margin-inline: auto;
+}
+
+.inputGroup > div {
+	display: flex;
+	flex-direction: column;
+	gap: 0.5rem;
+}
+
+.inputGroup label {
+	text-align: left;
+	font-weight: 600;
+	font-size: 0.9rem;
+	color: var(--text-secondary);
+}
+
+.macInput,
+.deviceNameInput,
+.ipInput {
+	flex: 1;
+	min-width: 200px;
+	padding: 0.75rem;
+	font-size: 1rem;
+	border: 2px solid var(--input-border);
+	border-radius: 6px;
+	margin-bottom: 0.2rem;
+	transition: border-color 0.2s ease-in-out;
+	background-color: var(--input-bg);
+	color: var(--text-primary);
+}
+
+.macInput:focus,
+.deviceNameInput:focus,
+.ipInput:focus {
+	border-color: var(--primary-color);
+	outline: none;
+}
+
+.wakeButton,
+.clearButton {
+	padding: 0.75rem;
+	font-size: 1rem;
+	border-radius: 6px;
+	transition: all 0.2s ease-in-out;
+	cursor: pointer;
+}
+
+.wakeButton {
+	background-color: var(--primary-color);
+	color: var(--background);
+	border: none;
+}
+
+.wakeButton:hover:not(:disabled) {
+	background-color: var(--primary-hover);
+}
+
+.wakeButton:disabled {
+	background-color: var(--button-disabled-bg);
+	color: var(--button-disabled-text);
+	cursor: not-allowed;
+	opacity: 0.7;
+}
+
+.wakeButton:active:not(:disabled) {
+	transform: scale(0.98);
+}
+
+.clearButton {
+	background-color: transparent;
+	color: var(--text-primary);
+	border: 1px solid var(--text-secondary);
+}
+
+.clearButton:hover {
+	background-color: var(--text-secondary);
+	color: var(--background);
+}
+
+.clearButton:active {
+	transform: scale(0.98);
+}
+
+.error,
+.success {
+	display: flex;
+	align-items: flex-start;
+	gap: 0.5rem;
+	padding: 0.75rem;
+	border-radius: 6px;
+}
+
+.statusIcon {
+	flex-shrink: 0;
+	margin-top: 2px;
+}
+
+.statusMessages {
+	flex: 1;
+	display: flex;
+	flex-direction: column;
+}
+
+.error {
+	background-color: var(--error-bg);
+	color: var(--error-color);
+	border: 1px solid var(--error-color);
+}
+
+.success {
+	background-color: var(--success-bg);
+	color: var(--success-color);
+	border: 1px solid var(--success-color);
+}
+
+.historySection {
+	margin-top: 1rem;
+	padding: 1rem;
+	background-color: var(--history-bg);
+	border-radius: 8px;
+}
+
+.historySection h3 {
+	margin: 0 0 1rem 0;
+	font-size: 1.2rem;
+	color: var(--primary-color);
+}
+
+.historyList {
+	display: flex;
+	flex-wrap: wrap;
+	gap: 0.5rem;
+	justify-content: center;
+}
+
+.historyItemContainer {
+	position: relative;
+	display: flex;
+	flex-direction: column;
+	width: 100%;
+	max-width: 300px;
+}
+
+.historyItem {
+	background-color: var(--history-item-bg);
+	border-radius: 8px;
+	padding: 1rem;
+	width: 100%;
+	text-align: left;
+}
+
+.deviceName {
+	display: block;
+	font-weight: 600;
+	font-size: 0.95rem;
+	color: var(--text-primary);
+	margin-bottom: 0.2rem;
+}
+
+.macAddress {
+	display: block;
+	font-size: 0.8rem;
+	color: var(--text-secondary);
+}
+
+.deviceStatus {
+	display: flex;
+	justify-content: space-between;
+	align-items: center;
+	gap: 0.5rem;
+	font-size: 0.8rem;
+	color: var(--text-secondary);
+}
+
+.statusIndicator {
+	padding: 0.2rem 0.5rem;
+	border-radius: 12px;
+	font-size: 0.75rem;
+	display: flex;
+	align-items: center;
+	gap: 0.3rem;
+}
+
+.statusIndicator.online {
+	background-color: var(--success-bg);
+	color: var(--success-color);
+}
+
+.statusIndicator.offline {
+	background-color: var(--error-bg);
+	color: var(--error-color);
+}
+
+.historyActions {
+	display: flex;
+	gap: 0.5rem;
+	justify-content: space-between;
+	padding-top: 0.5rem;
+	width: 100%;
+}
+
+.actionButton {
+	flex: 1;
+	background: none;
+	border: 1px solid var(--text-secondary);
+	cursor: pointer;
+	padding: 0.4rem 0.8rem;
+	border-radius: 4px;
+	font-size: 0.9rem;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	transition: all 0.2s ease;
+	color: var(--text-primary);
+	font-weight: 500;
+}
+
+.wakeAction {
+	border-color: var(--primary-color);
+	color: var(--primary-color);
+}
+
+.wakeAction:hover {
+	background-color: var(--primary-color);
+	color: var(--background);
+	transform: scale(1.05);
+}
+
+.removeAction {
+	border-color: var(--error-color);
+	color: var(--error-color);
+}
+
+.removeAction:hover {
+	background-color: var(--error-color);
+	color: var(--background);
+	transform: scale(1.05);
+}
+
+.appHeader {
+	text-align: center;
+	margin-bottom: 2rem;
+}
+
+.appDescription {
+	color: var(--text-secondary);
+	margin-top: 0.5rem;
+	display: flex;
+	flex-direction: column;
+	align-items: center;
+	gap: 0.5rem;
+}
+
+.mainSection {
+	display: flex;
+	flex-direction: column;
+	gap: 1.5rem;
+}
+
+.formCard,
+.historyCard,
+.statusCard {
+	background-color: var(--card-bg);
+	border-radius: 12px;
+	padding: 1.5rem;
+	box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.sectionTitle {
+	font-size: 1.25rem;
+	color: var(--text-primary);
+	white-space: nowrap;
+}
+
+.inputWrapper {
+	display: flex;
+	flex-direction: column;
+	gap: 0.5rem;
+}
+
+.inputHelp {
+	color: var(--text-secondary);
+	font-size: 0.8rem;
+	margin-top: -0.2rem;
+}
+
+.inputError {
+	color: var(--error-color);
+	font-size: 0.8rem;
+	margin: 0;
+}
+
+.required {
+	color: var(--error-color);
+}
+
+.buttonGroup {
+	display: flex;
+	gap: 1rem;
+	margin-top: 1.5rem;
+}
+
+.statusCard {
+	border: 1px solid;
+}
+
+.statusCard.success {
+	border-color: var(--success-color);
+}
+
+.statusCard.error {
+	border-color: var(--error-color);
+}
+
+.statusHeader {
+	display: flex;
+	align-items: center;
+	gap: 0.5rem;
+	margin-bottom: 0.5rem;
+}
+
+.statusTitle {
+	font-weight: 600;
+}
+
+.historyHeader {
+	display: flex;
+	justify-content: space-between;
+	align-items: center;
+	margin-bottom: 1rem;
+}
+
+.historyCount {
+	font-size: 0.9rem;
+	color: var(--text-secondary);
+	padding: 0.3rem 0.8rem;
+	background-color: var(--history-count-bg);
+	border-radius: 1rem;
+	white-space: nowrap;
+}
+
+.historyGrid {
+	display: grid;
+	gap: 1rem;
+	grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+}
+
+.historyItem {
+	background-color: var(--history-item-bg);
+	border-radius: 8px;
+	padding: 1rem;
+	display: flex;
+	flex-direction: column;
+	gap: 0.8rem;
+	transition: transform 0.2s ease;
+}
+
+.historyItem:hover {
+	transform: translateY(-2px);
+}
+
+.itemHeader {
+	display: flex;
+	justify-content: space-between;
+	align-items: flex-start;
+	gap: 1rem;
+}
+
+.itemDetails {
+	display: flex;
+	flex-direction: column;
+	gap: 0.3rem;
+	font-size: 0.85rem;
+	color: var(--text-secondary);
+}
+
+.statusBadge {
+	font-size: 0.75rem;
+	padding: 0.25rem 0.6rem;
+	border-radius: 1rem;
+	white-space: nowrap;
+}
+
+.statusBadge.online {
+	background-color: var(--success-bg);
+	color: var(--success-color);
+}
+
+.statusBadge.offline {
+	background-color: var(--error-bg);
+	color: var(--error-color);
+}
+
+.cardHeader {
+	display: flex;
+	justify-content: space-between;
+	align-items: center;
+	margin-bottom: 1.5rem;
+}
+
+.formSections {
+	display: flex;
+	flex-direction: column;
+	gap: 1rem;
+}
+
+.formSection {
+	padding: 1.5rem;
+	background-color: var(--section-bg);
+	border-radius: 8px;
+	border: 1px solid var(--border-color);
+}
+
+.formSectionTitle {
+	font-size: 1.1rem;
+	margin: 0 0 1rem 0;
+	color: var(--text-primary);
+}
+
+@keyframes spin {
+	to {
+		transform: rotate(360deg);
+	}
+}
+
+.spinner {
+	width: 24px;
+	height: 24px;
+	border: 3px solid var(--primary-color);
+	border-top-color: transparent;
+	border-radius: 50%;
+	animation: spin 0.8s linear infinite;
+}
+
+.buttonContent {
+	display: flex;
+	align-items: center;
+	gap: 0.5rem;
+	justify-content: center;
+}
+
+.buttonSpinner {
+	width: 16px;
+	height: 16px;
+	border: 2px solid var(--background);
+	border-top-color: transparent;
+	border-radius: 50%;
+	animation: spin 0.8s linear infinite;
+}
+
+@media screen and (max-width: 768px) {
+	.formSection {
+		padding: 1rem;
+	}
+
+	.buttonContent {
+		width: 100%;
+	}
+
+	.keyboardHelp {
+		display: none;
+	}
+}
+
+input:disabled {
+	opacity: 0.7;
+	cursor: not-allowed;
+}
+
+.wakeButton,
+.clearButton {
+	transition: all 0.2s ease-in-out;
+}
+
+.wakeButton:not(:disabled):hover,
+.clearButton:not(:disabled):hover {
+	transform: translateY(-2px);
+}
+
+.navigationButtons {
+	display: flex;
+	justify-content: center;
+	margin: 1rem 0;
+}
+
+.navButton {
+	background: none;
+	border: none;
+	color: var(--primary-color);
+	padding: 0.5rem 1rem;
+	cursor: pointer;
+	font-size: 0.9rem;
+	border-radius: 20px;
+	transition: all 0.2s ease;
+	display: flex;
+	align-items: center;
+	gap: 0.5rem;
+}
+
+.navButton:hover {
+	background-color: var(--history-bg);
+	transform: translateY(-1px);
+}
+
+.historyHeaderActions {
+	display: flex;
+	align-items: center;
+	gap: 1rem;
+}
+
+@media (prefers-color-scheme: dark) {
+	.navButton:hover {
+		background-color: var(--section-bg);
+	}
+}
+
+.macInput:focus,
+.deviceNameInput:focus,
+.ipInput:focus,
+.wakeButton:focus,
+.clearButton:focus,
+.navButton:focus,
+.actionButton:focus {
+	outline: none;
+	box-shadow:
+		0 0 0 3px var(--background),
+		0 0 0 6px var(--primary-color);
+}
+
+:focus-visible {
+	outline: none;
+	border-radius: 4px;
+}
+
+label {
+	cursor: pointer;
+}
+
+.wakeButton,
+.clearButton,
+.navButton,
+.actionButton {
+	position: relative;
+	overflow: hidden;
+}
+
+.wakeButton:after,
+.clearButton:after,
+.navButton:after,
+.actionButton:after {
+	content: "";
+	position: absolute;
+	top: 50%;
+	left: 50%;
+	width: 0;
+	height: 0;
+	background: rgba(255, 255, 255, 0.2);
+	border-radius: 50%;
+	transform: translate(-50%, -50%);
+	opacity: 0;
+	transition:
+		width 0.3s,
+		height 0.3s,
+		opacity 0.3s;
+}
+
+.wakeButton:active:after,
+.clearButton:active:after,
+.navButton:active:after,
+.actionButton:active:after {
+	width: 100%;
+	height: 100%;
+	opacity: 1;
+	transition: 0s;
+}
+
+@media (hover: none) {
+	.wakeButton,
+	.clearButton,
+	.navButton,
+	.actionButton {
+		cursor: default;
+		-webkit-tap-highlight-color: transparent;
+	}
+}
+
+.keyboardHelp {
+	font-size: 0.8rem;
+	color: var(--text-secondary);
+	opacity: 0.8;
+	margin-top: 0.5rem;
+	display: block;
 }
