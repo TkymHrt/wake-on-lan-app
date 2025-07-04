@@ -49,7 +49,6 @@
 }
 
 :where(textarea) {
-	resize: vertical;
 	resize: block;
 }
 
@@ -57,7 +56,7 @@
 	cursor: pointer;
 }
 
-:where(:disabled, label:has(> :disabled, + disabled)) {
+:where(:disabled, label:has(> :disabled, + :disabled)) {
 	cursor: not-allowed;
 }
 

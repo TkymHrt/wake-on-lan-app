@@ -663,10 +663,6 @@ input:disabled {
 	border-radius: 4px;
 }
 
-label {
-	cursor: pointer;
-}
-
 .wakeButton,
 .clearButton,
 .navButton,

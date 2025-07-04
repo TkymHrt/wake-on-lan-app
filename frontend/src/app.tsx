@@ -1,5 +1,5 @@
 import "./app.css";
-import { useState, useEffect } from "preact/hooks";
+import { useEffect, useState } from "preact/hooks";
 
 const MAX_HISTORY_ITEMS = 5;
 
@@ -250,6 +250,7 @@ export function App() {
 
 						<div class="buttonGroup">
 							<button
+								type="button"
 								onClick={() => handleWake()}
 								disabled={loading || !mac}
 								class="wakeButton"
@@ -264,6 +265,7 @@ export function App() {
 								)}
 							</button>
 							<button
+								type="button"
 								onClick={() => {
 									setMac("");
 									setDeviceName("");
@@ -288,7 +290,10 @@ export function App() {
 							</div>
 							<div class="statusMessages">
 								{status.message.split("\n").map((msg, i) => (
-									<div key={i} class="statusLine">
+									<div
+										key={`status-line-${i}-${msg.slice(0, 10)}`}
+										class="statusLine"
+									>
 										{msg}
 									</div>
 								))}
@@ -306,7 +311,7 @@ export function App() {
 							</div>
 							<div class="historyGrid">
 								{history.map((item, index) => (
-									<div key={index} class="historyItemContainer">
+									<div key={`history-${item.mac}`} class="historyItemContainer">
 										<div class="historyItem">
 											<div class="itemHeader">
 												<span class="deviceName">
@@ -330,6 +335,7 @@ export function App() {
 											</div>
 											<div class="historyActions">
 												<button
+													type="button"
 													onClick={() =>
 														handleWake(
 															item.mac,
@@ -342,6 +348,7 @@ export function App() {
 													起動
 												</button>
 												<button
+													type="button"
 													onClick={() => handleRemoveHistoryItem(index)}
 													class="actionButton removeAction"
 												>
