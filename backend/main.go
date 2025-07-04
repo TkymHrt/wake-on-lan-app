@@ -165,7 +165,15 @@ func main() {
 	flag.Parse()
 
 	// Serve React static files
-	fs := http.FileServer(http.Dir("../frontend/dist"))
+	// In production, files will be in ./frontend/dist relative to the binary
+	// In development, files are in ../frontend/dist
+	frontendPath := "./frontend/dist"
+	if _, err := os.Stat(frontendPath); os.IsNotExist(err) {
+		// Fallback to development path
+		frontendPath = "../frontend/dist"
+	}
+
+	fs := http.FileServer(http.Dir(frontendPath))
 	http.Handle("/", fs)
 
 	// API endpoints
@@ -175,6 +183,7 @@ func main() {
 	// Start server
 	addr := fmt.Sprintf("%s:%s", *host, *port)
 	println("Server running on http://" + addr)
+	println("Serving frontend from:", frontendPath)
 	if err := http.ListenAndServe(addr, nil); err != nil {
 		fmt.Fprintf(os.Stderr, "Error starting server: %v\n", err)
 		os.Exit(1)
