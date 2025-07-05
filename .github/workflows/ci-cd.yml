@@ -244,7 +244,7 @@ jobs:
       continue-on-error: true
 
   deploy:
-    runs-on: [self-hosted, linux, ARM64]
+    runs-on: self-hosted
     needs: [frontend-test-and-build, backend-test-and-build, integration-test, security-scan]
     if: github.ref == 'refs/heads/main' && github.event_name == 'push'
 
