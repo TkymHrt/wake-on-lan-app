@@ -186,10 +186,14 @@
 }
 
 .appHeader h1 {
-  background: linear-gradient(135deg, var(--header-primary) 0%, var(--header-secondary) 100%);
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-  background-clip: text;
+	background: linear-gradient(
+		135deg,
+		var(--header-primary) 0%,
+		var(--header-secondary) 100%
+	);
+	-webkit-background-clip: text;
+	-webkit-text-fill-color: transparent;
+	background-clip: text;
 }
 
 .mainSection {
