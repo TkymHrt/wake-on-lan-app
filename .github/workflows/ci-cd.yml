@@ -46,6 +46,12 @@ jobs:
       run: pnpm run build
       working-directory: ./frontend
 
+    - name: Upload frontend artifact
+      uses: actions/upload-artifact@v4
+      with:
+        name: frontend-dist
+        path: frontend/dist/
+
     - name: Test build artifacts
       run: |
         ls -la dist/
@@ -119,6 +125,12 @@ jobs:
       run: go build -v -o wol-server ./...
       working-directory: ./backend
 
+    - name: Upload backend artifact
+      uses: actions/upload-artifact@v4
+      with:
+        name: backend-binary
+        path: backend/wol-server
+
     - name: Test binary
       run: |
         ls -la wol-server
@@ -133,34 +145,20 @@ jobs:
     - name: Checkout code
       uses: actions/checkout@v4
 
-    - name: Setup Go
-      uses: actions/setup-go@v4
+    - name: Download frontend artifact
+      uses: actions/download-artifact@v4
       with:
-        go-version: '1.24.x'
+        name: frontend-dist
+        path: frontend/dist
 
-    - name: Setup pnpm
-      uses: pnpm/action-setup@v2
+    - name: Download backend artifact
+      uses: actions/download-artifact@v4
       with:
-        version: latest
+        name: backend-binary
+        path: backend
 
-    - name: Setup Node.js
-      uses: actions/setup-node@v4
-      with:
-        node-version: '20.x'
-        cache: 'pnpm'
-        cache-dependency-path: './frontend/pnpm-lock.yaml'
-
-    - name: Install frontend dependencies
-      run: pnpm install --frozen-lockfile
-      working-directory: ./frontend
-
-    - name: Build frontend
-      run: pnpm run build
-      working-directory: ./frontend
-
-    - name: Build backend
-      run: go build -o wol-server .
-      working-directory: ./backend
+    - name: Make backend binary executable
+      run: chmod +x backend/wol-server
 
     - name: Start backend server
       run: |
@@ -254,34 +252,18 @@ jobs:
     - name: Checkout code
       uses: actions/checkout@v4
 
-    - name: Setup pnpm
-      uses: pnpm/action-setup@v2
+    - name: Download frontend artifact
+      uses: actions/download-artifact@v4
       with:
-        version: latest
+        name: frontend-dist
+        path: frontend/dist
 
-    - name: Setup Node.js
-      uses: actions/setup-node@v4
+    - name: Download backend artifact
+      uses: actions/download-artifact@v4
       with:
-        node-version: '20.x'
-        cache: 'pnpm'
-        cache-dependency-path: './frontend/pnpm-lock.yaml'
-
-    - name: Setup Go
-      uses: actions/setup-go@v4
-      with:
-        go-version: '1.24.x'
-
-    - name: Install frontend dependencies
-      run: pnpm install --frozen-lockfile
-      working-directory: ./frontend
-
-    - name: Build frontend for production
-      run: pnpm run build
-      working-directory: ./frontend
-
-    - name: Build backend for production
-      run: go build -o wol-server .
-      working-directory: ./backend
+        name: backend-binary
+        # Download to the root of the workspace
+        path: .
 
     - name: Stop existing services (if running)
       run: |
@@ -300,14 +282,13 @@ jobs:
         sudo cp wol-server /opt/wake-on-lan/
 
         # Copy built frontend files to the location expected by Go server
-        sudo cp -r dist/* /opt/wake-on-lan/frontend/dist/
+        sudo cp -r frontend/dist/* /opt/wake-on-lan/frontend/dist/
 
         # Set proper permissions
         sudo chown -R root:root /opt/wake-on-lan
         sudo chmod 755 /opt/wake-on-lan/wol-server
         sudo chmod -R 644 /opt/wake-on-lan/frontend/dist/*
         sudo find /opt/wake-on-lan/frontend/dist -type d -exec chmod 755 {} \;
-      working-directory: ./backend
 
     - name: Create systemd service file
       run: |
