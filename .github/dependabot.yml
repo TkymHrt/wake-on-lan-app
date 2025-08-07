@@ -1,0 +1,17 @@
+version: 2
+updates:
+  # Enable version updates for pnpm
+  - package-ecosystem: "npm"
+    directory: "/frontend"
+    schedule:
+      interval: "daily"
+    # Allow up to 10 open pull requests for pnpm dependencies
+    open-pull-requests-limit: 10
+
+  # Enable version updates for Go
+  - package-ecosystem: "gomod"
+    directory: "/backend"
+    schedule:
+      interval: "daily"
+    # Allow up to 10 open pull requests for Go modules
+    open-pull-requests-limit: 10
