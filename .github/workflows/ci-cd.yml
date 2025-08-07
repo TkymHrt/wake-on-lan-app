@@ -274,6 +274,7 @@ jobs:
         # This is where you would place the proxy binary and its systemd service
         sudo mkdir -p /opt/wol-proxy
         sudo cp /tmp/prod-deployment/proxy-server /opt/wol-proxy/
+        sudo chmod +x /opt/wol-proxy/proxy-server
         sudo cp proxy.service /etc/systemd/system/
         sudo systemctl daemon-reload
         sudo systemctl enable --now proxy.service
