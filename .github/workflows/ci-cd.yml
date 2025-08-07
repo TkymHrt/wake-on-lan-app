@@ -262,13 +262,6 @@ jobs:
         name: proxy-binary
         path: /tmp/prod-deployment
 
-    - name: Stop existing services
-      run: |
-        sudo systemctl stop wake-on-lan.service || true
-        sudo systemctl stop proxy.service || true
-        echo "Attempted to stop existing services."
-      continue-on-error: true
-
     - name: Deploy Proxy Service
       run: |
         # This is where you would place the proxy binary and its systemd service
