@@ -138,13 +138,16 @@ jobs:
         PORT=${{ steps.start_app.outputs.port }}
         HOSTNAME="pr-${PR_NUMBER}.wol.tkymhrt.dpdns.org"
         TARGET="http://localhost:${PORT}"
-        # This path must match the one in your proxy.service file
         ROUTES_FILE="/opt/wol-proxy/routes.json"
 
-        # Use jq to add/update the route. Create file if not exists.
-        # This is atomic and safe for concurrent runs.
-        sudo touch ${ROUTES_FILE} && sudo chown $(whoami) ${ROUTES_FILE}
-        temp_json=$(jq ".routes.\"${HOSTNAME}\" = \"${TARGET}\"" ${ROUTES_FILE})
+        # Ensure directory exists and initialize file if it doesn't exist
+        sudo mkdir -p /opt/wol-proxy
+        if [ ! -f "${ROUTES_FILE}" ]; then
+          echo '{"routes":{}}' | sudo tee ${ROUTES_FILE}
+        fi
+
+        # Atomically update the JSON file using sudo
+        temp_json=$(sudo jq ".routes.\"${HOSTNAME}\" = \"${TARGET}\"" ${ROUTES_FILE})
         echo "${temp_json}" | sudo tee ${ROUTES_FILE} > /dev/null
 
         echo "Updated proxy config for ${HOSTNAME} -> ${TARGET}"
@@ -205,8 +208,8 @@ jobs:
         ROUTES_FILE="/opt/wol-proxy/routes.json"
 
         if [ -f "${ROUTES_FILE}" ]; then
-          # Use jq to delete the key
-          temp_json=$(jq "del(.routes.\"${HOSTNAME}\")" ${ROUTES_FILE})
+          # Atomically update the JSON file using sudo
+          temp_json=$(sudo jq "del(.routes.\"${HOSTNAME}\")" ${ROUTES_FILE})
           echo "${temp_json}" | sudo tee ${ROUTES_FILE} > /dev/null
           echo "Removed proxy route for ${HOSTNAME}"
         fi
@@ -312,8 +315,14 @@ jobs:
         TARGET="http://localhost:8080" # Assuming main app runs on 8080
         ROUTES_FILE="/opt/wol-proxy/routes.json"
 
-        sudo touch ${ROUTES_FILE} && sudo chown $(whoami) ${ROUTES_FILE}
-        temp_json=$(jq ".routes.\"${HOSTNAME}\" = \"${TARGET}\"" ${ROUTES_FILE})
+        # Ensure directory exists and initialize file if it doesn't exist
+        sudo mkdir -p /opt/wol-proxy
+        if [ ! -f "${ROUTES_FILE}" ]; then
+          echo '{"routes":{}}' | sudo tee ${ROUTES_FILE}
+        fi
+
+        # Atomically update the JSON file using sudo
+        temp_json=$(sudo jq ".routes.\"${HOSTNAME}\" = \"${TARGET}\"" ${ROUTES_FILE})
         echo "${temp_json}" | sudo tee ${ROUTES_FILE} > /dev/null
         echo "Updated proxy config for production: ${HOSTNAME} -> ${TARGET}"
 
