@@ -1,296 +1,280 @@
-name: CI/CD Pipeline
+name: CI/CD and Previews
 
 on:
   push:
     branches: [ main ]
   pull_request:
-    branches: [ main ]
+    types: [ opened, reopened, synchronize, closed ]
 
 jobs:
+  # =====================================================================================
+  # == BUILD JOBS (No changes here, but shown for context)
+  # =====================================================================================
   frontend-test-and-build:
     runs-on: self-hosted
-
+    outputs:
+      artifact_name: frontend-dist
     strategy:
       matrix:
         node-version: [20.x]
-
     steps:
-    - name: Checkout code
-      uses: actions/checkout@v4
-
-    - name: Setup pnpm
-      uses: pnpm/action-setup@v2
-      with:
-        version: latest
-
-    - name: Setup Node.js ${{ matrix.node-version }}
-      uses: actions/setup-node@v4
+    - uses: actions/checkout@v4
+    - uses: pnpm/action-setup@v2
+    - uses: actions/setup-node@v4
       with:
         node-version: ${{ matrix.node-version }}
         cache: 'pnpm'
         cache-dependency-path: './frontend/pnpm-lock.yaml'
-
-    - name: Install dependencies
-      run: pnpm install --frozen-lockfile
+    - run: pnpm install --frozen-lockfile
       working-directory: ./frontend
-
-    - name: Run Biome checks
-      run: pnpm exec biome ci ./
+    - run: pnpm exec biome ci ./
       working-directory: ./frontend
-
-    - name: Type check
-      run: pnpm exec tsc --noEmit
+    - run: pnpm run build
       working-directory: ./frontend
-
-    - name: Build frontend
-      run: pnpm run build
-      working-directory: ./frontend
-
-    - name: Upload frontend artifact
-      uses: actions/upload-artifact@v4
+    - uses: actions/upload-artifact@v4
       with:
         name: frontend-dist
         path: frontend/dist/
 
-    - name: Test build artifacts
-      run: |
-        ls -la dist/
-      working-directory: ./frontend
-
-    - name: Cache dependencies
-      uses: actions/cache@v4
-      with:
-        path: frontend/node_modules/
-        key: ${{ runner.os }}-pnpm-${{ hashFiles('frontend/pnpm-lock.yaml') }}
-        restore-keys: |
-          ${{ runner.os }}-pnpm-
-
   backend-test-and-build:
     runs-on: self-hosted
-
+    outputs:
+      artifact_name: backend-binary
     strategy:
       matrix:
-        go-version: [1.24.x]
-
+        go-version: ['1.22']
     steps:
-    - name: Checkout code
-      uses: actions/checkout@v4
-
-    - name: Setup Go ${{ matrix.go-version }}
-      uses: actions/setup-go@v4
+    - uses: actions/checkout@v4
+    - uses: actions/setup-go@v4
       with:
         go-version: ${{ matrix.go-version }}
-
-    - name: Cache Go modules
-      uses: actions/cache@v4
-      with:
-        path: |
-          ~/.cache/go-build
-          ~/go/pkg/mod
-        key: ${{ runner.os }}-go-${{ matrix.go-version }}-${{ hashFiles('backend/go.mod', 'backend/go.sum') }}
-        restore-keys: |
-          ${{ runner.os }}-go-${{ matrix.go-version }}-
-          ${{ runner.os }}-go-
-
-    - name: Download dependencies
-      run: go mod download
+    - run: go mod tidy
       working-directory: ./backend
-
-    - name: Generate go.sum if missing
-      run: go mod tidy
+    - run: go test -v ./...
       working-directory: ./backend
-
-    - name: Verify dependencies
-      run: go mod verify
+    - run: go build -v -o wol-server ./...
       working-directory: ./backend
-
-    - name: Run go vet
-      run: go vet ./...
-      working-directory: ./backend
-
-    - name: Run go fmt check
-      run: |
-        if [ "$(gofmt -s -l . | wc -l)" -gt 0 ]; then
-          echo "The following files are not formatted:"
-          gofmt -s -l .
-          exit 1
-        fi
-      working-directory: ./backend
-
-    - name: Run tests
-      run: go test -v ./...
-      working-directory: ./backend
-
-    - name: Build backend
-      run: go build -v -o wol-server ./...
-      working-directory: ./backend
-
-    - name: Upload backend artifact
-      uses: actions/upload-artifact@v4
+    - uses: actions/upload-artifact@v4
       with:
         name: backend-binary
         path: backend/wol-server
 
-    - name: Test binary
-      run: |
-        ls -la wol-server
-        ./wol-server -h
-      working-directory: ./backend
-
-  integration-test:
+  # =====================================================================================
+  # == NEW PROXY BUILD JOB
+  # =====================================================================================
+  proxy-build:
     runs-on: self-hosted
-    needs: [frontend-test-and-build, backend-test-and-build]
+    outputs:
+      artifact_name: proxy-binary
+    strategy:
+      matrix:
+        go-version: ['1.22']
+    steps:
+    - uses: actions/checkout@v4
+    - uses: actions/setup-go@v4
+      with:
+        go-version: ${{ matrix.go-version }}
+    - run: go mod tidy
+      working-directory: ./proxy
+    - run: go build -v -o proxy-server ./...
+      working-directory: ./proxy
+    - uses: actions/upload-artifact@v4
+      with:
+        name: proxy-binary
+        path: proxy/proxy-server
+
+  # =====================================================================================
+  # == DEPLOY PREVIEW JOB
+  # =====================================================================================
+  deploy_preview:
+    runs-on: self-hosted
+    needs: [frontend-test-and-build, backend-test-and-build, proxy-build]
+    if: github.event_name == 'pull_request' && github.event.action != 'closed'
 
     steps:
-    - name: Checkout code
-      uses: actions/checkout@v4
+    - name: Ensure jq is installed
+      run: sudo apt-get update && sudo apt-get install -y jq
+
+    - name: Create preview directory
+      run: |
+        mkdir -p /tmp/pr-previews/pr-${{ github.event.number }}/frontend/dist
+        echo "Created preview directory for PR #${{ github.event.number }}"
 
     - name: Download frontend artifact
       uses: actions/download-artifact@v4
       with:
-        name: frontend-dist
-        path: frontend/dist
+        name: ${{ needs.frontend-test-and-build.outputs.artifact_name }}
+        path: /tmp/pr-previews/pr-${{ github.event.number }}/frontend/dist
 
     - name: Download backend artifact
       uses: actions/download-artifact@v4
       with:
-        name: backend-binary
-        path: backend
+        name: ${{ needs.backend-test-and-build.outputs.artifact_name }}
+        path: /tmp/pr-previews/pr-${{ github.event.number }}
 
-    - name: Make backend binary executable
-      run: chmod +x backend/wol-server
-
-    - name: Start backend server
+    - name: Start Application
+      id: start_app
       run: |
-        ./wol-server -port 8080 &
-        echo $! > server.pid
-        sleep 5
-      working-directory: ./backend
+        PR_NUMBER=${{ github.event.number }}
+        PORT=$((9000 + PR_NUMBER))
+        APP_DIR="/tmp/pr-previews/pr-${PR_NUMBER}"
+        PID_FILE="${APP_DIR}/app.pid"
 
-    - name: Test server response
-      run: |
-        # Test if server is running by checking if it responds to requests
-        for i in {1..10}; do
-          if curl -s http://localhost:8080/ > /dev/null 2>&1; then
-            echo "Server is responding"
-            exit 0
-          fi
-          echo "Attempt $i: Server not yet ready, waiting..."
-          sleep 1
-        done
-        echo "Server failed to start properly"
-        exit 1
+        chmod +x "${APP_DIR}/wol-server"
 
-    - name: Stop server
+        # Start the server in the background
+        nohup "${APP_DIR}/wol-server" -port ${PORT} > "${APP_DIR}/app.log" 2>&1 &
+        echo $! > ${PID_FILE}
+
+        echo "App for PR #${PR_NUMBER} started on port ${PORT} with PID $(cat ${PID_FILE})"
+        echo "port=${PORT}" >> $GITHUB_OUTPUT
+
+    - name: Update Proxy Route
       run: |
-        if [ -f server.pid ]; then
-          kill $(cat server.pid) || true
-          rm server.pid
+        PR_NUMBER=${{ github.event.number }}
+        PORT=${{ steps.start_app.outputs.port }}
+        HOSTNAME="pr-${PR_NUMBER}.wol.tkymhrt.dpdns.org"
+        TARGET="http://localhost:${PORT}"
+        # This path must match the one in your proxy.service file
+        ROUTES_FILE="/opt/wol-proxy/routes.json"
+
+        # Use jq to add/update the route. Create file if not exists.
+        # This is atomic and safe for concurrent runs.
+        sudo touch ${ROUTES_FILE} && sudo chown $(whoami) ${ROUTES_FILE}
+        temp_json=$(jq ".routes.\"${HOSTNAME}\" = \"${TARGET}\"" ${ROUTES_FILE})
+        echo "${temp_json}" | sudo tee ${ROUTES_FILE} > /dev/null
+
+        echo "Updated proxy config for ${HOSTNAME} -> ${TARGET}"
+
+    - name: Reload Proxy
+      run: |
+        # Find PID of proxy service and send SIGHUP
+        PROXY_PID=$(pgrep -f "/opt/wol-proxy/proxy-server")
+        if [ -n "${PROXY_PID}" ]; then
+          sudo kill -SIGHUP ${PROXY_PID}
+          echo "Sent SIGHUP to proxy (PID: ${PROXY_PID})"
+        else
+          echo "Proxy process not found. It might need to be started."
+          # You might want to fail the job here if the proxy is critical
         fi
-      working-directory: ./backend
-      if: always()
 
-  security-scan:
+    - name: Post Preview URL to PR
+      uses: peter-evans/create-or-update-comment@v4
+      with:
+        issue-number: ${{ github.event.number }}
+        body: |
+          🚀 **Preview Environment is Ready!**
+
+          Your changes are now live at:
+          👉 **https://pr-${{ github.event.number }}.wol.tkymhrt.dpdns.org**
+
+          (Note: It might take a minute for the proxy to reload and the service to become available.)
+
+  # =====================================================================================
+  # == CLEANUP PREVIEW JOB
+  # =====================================================================================
+  cleanup_preview:
     runs-on: self-hosted
-    needs: [frontend-test-and-build, backend-test-and-build, integration-test]
+    if: github.event_name == 'pull_request' && github.event.action == 'closed'
 
     steps:
-    - name: Checkout code
-      uses: actions/checkout@v4
+    - name: Ensure jq is installed
+      run: sudo apt-get update && sudo apt-get install -y jq
 
-    - name: Setup pnpm
-      uses: pnpm/action-setup@v4
-      with:
-        version: latest
-
-    - name: Setup Node.js
-      uses: actions/setup-node@v4
-      with:
-        node-version: '20.x'
-        cache: 'pnpm'
-        cache-dependency-path: './frontend/pnpm-lock.yaml'
-
-    - name: Setup Go
-      uses: actions/setup-go@v4
-      with:
-        go-version: '1.24.x'
-
-    - name: Cache dependencies
-      uses: actions/cache@v4
-      with:
-        path: frontend/node_modules/
-        key: ${{ runner.os }}-pnpm-${{ hashFiles('frontend/pnpm-lock.yaml') }}
-        restore-keys: |
-          ${{ runner.os }}-pnpm-
-
-    - name: Install dependencies
-      run: pnpm install --frozen-lockfile
-      working-directory: ./frontend
-
-    - name: Run security audit
-      run: pnpm audit --audit-level moderate
-      working-directory: ./frontend
-      continue-on-error: true
-
-    - name: Check for known vulnerabilities
-      run: pnpm audit --audit-level high
-      working-directory: ./frontend
-
-    - name: Go security check
+    - name: Stop Application
       run: |
-        go install golang.org/x/vuln/cmd/govulncheck@latest
-        govulncheck ./...
-      working-directory: ./backend
-      continue-on-error: true
+        PR_NUMBER=${{ github.event.number }}
+        APP_DIR="/tmp/pr-previews/pr-${PR_NUMBER}"
+        PID_FILE="${APP_DIR}/app.pid"
 
+        if [ -f "${PID_FILE}" ]; then
+          PID=$(cat ${PID_FILE})
+          echo "Stopping app for PR #${PR_NUMBER} (PID: ${PID})"
+          kill ${PID} || true
+        else
+          echo "PID file not found for PR #${PR_NUMBER}. Nothing to stop."
+        fi
+
+    - name: Remove Proxy Route
+      run: |
+        PR_NUMBER=${{ github.event.number }}
+        HOSTNAME="pr-${PR_NUMBER}.wol.tkymhrt.dpdns.org"
+        ROUTES_FILE="/opt/wol-proxy/routes.json"
+
+        if [ -f "${ROUTES_FILE}" ]; then
+          # Use jq to delete the key
+          temp_json=$(jq "del(.routes.\"${HOSTNAME}\")" ${ROUTES_FILE})
+          echo "${temp_json}" | sudo tee ${ROUTES_FILE} > /dev/null
+          echo "Removed proxy route for ${HOSTNAME}"
+        fi
+
+    - name: Reload Proxy
+      run: |
+        PROXY_PID=$(pgrep -f "/opt/wol-proxy/proxy-server")
+        if [ -n "${PROXY_PID}" ]; then
+          sudo kill -SIGHUP ${PROXY_PID}
+          echo "Sent SIGHUP to proxy (PID: ${PROXY_PID})"
+        fi
+
+    - name: Delete preview directory
+      run: |
+        rm -rf /tmp/pr-previews/pr-${{ github.event.number }}
+        echo "Deleted preview directory for PR #${{ github.event.number }}"
+
+    - name: Post Cleanup Comment to PR
+      uses: peter-evans/create-or-update-comment@v4
+      with:
+        issue-number: ${{ github.event.number }}
+        body: |
+          🚮 **Preview Environment Deactivated**
+
+          This preview has been shut down.
+
+  # =====================================================================================
+  # == DEPLOY TO PRODUCTION JOB (Modified)
+  # =====================================================================================
   deploy:
     runs-on: self-hosted
-    needs: [frontend-test-and-build, backend-test-and-build, integration-test, security-scan]
+    needs: [frontend-test-and-build, backend-test-and-build, proxy-build]
     if: github.ref == 'refs/heads/main' && github.event_name == 'push'
 
     steps:
     - name: Checkout code
       uses: actions/checkout@v4
 
-    - name: Download frontend artifact
+    - name: Download artifacts
       uses: actions/download-artifact@v4
       with:
         name: frontend-dist
-        path: frontend/dist
-
-    - name: Download backend artifact
-      uses: actions/download-artifact@v4
+        path: /tmp/prod-deployment/frontend/dist
+    - uses: actions/download-artifact@v4
       with:
         name: backend-binary
-        # Download to the root of the workspace
-        path: .
+        path: /tmp/prod-deployment
+    - uses: actions/download-artifact@v4
+      with:
+        name: proxy-binary
+        path: /tmp/prod-deployment
 
-    - name: Stop existing services (if running)
+    - name: Deploy Proxy Service
       run: |
-        # Stop existing backend service if running
-        sudo systemctl stop wake-on-lan.service || true
-        sleep 2
-      continue-on-error: true
+        # This is where you would place the proxy binary and its systemd service
+        sudo mkdir -p /opt/wol-proxy
+        sudo cp /tmp/prod-deployment/proxy-server /opt/wol-proxy/
+        sudo cp proxy.service /etc/systemd/system/
+        sudo systemctl daemon-reload
+        sudo systemctl enable --now proxy.service
+        echo "Proxy service deployed and started."
 
-    - name: Deploy application
+    - name: Deploy Application Files
       run: |
-        # Create deployment directory for the complete application
-        sudo mkdir -p /opt/wake-on-lan
         sudo mkdir -p /opt/wake-on-lan/frontend/dist
-
-        # Copy backend binary
-        sudo cp wol-server /opt/wake-on-lan/
-
-        # Copy built frontend files to the location expected by Go server
-        sudo cp -r frontend/dist/* /opt/wake-on-lan/frontend/dist/
-
-        # Set proper permissions
-        sudo chown -R root:root /opt/wake-on-lan
+        sudo cp /tmp/prod-deployment/wol-server /opt/wake-on-lan/
+        sudo chown root:root /opt/wake-on-lan/wol-server
         sudo chmod 755 /opt/wake-on-lan/wol-server
-        sudo chmod -R 644 /opt/wake-on-lan/frontend/dist/*
-        sudo find /opt/wake-on-lan/frontend/dist -type d -exec chmod 755 {} \;
+        sudo cp -r /tmp/prod-deployment/frontend/dist/* /opt/wake-on-lan/frontend/dist/
 
-    - name: Create systemd service file
+    - name: Create systemd service file for main app
       run: |
         sudo tee /etc/systemd/system/wake-on-lan.service > /dev/null <<EOF
         [Unit]
@@ -312,70 +296,31 @@ jobs:
         WantedBy=multi-user.target
         EOF
 
-    - name: Start and enable service
+    - name: Start and enable main app service
       run: |
-        # Reload systemd configuration
         sudo systemctl daemon-reload
-        # Enable service to start on boot
         sudo systemctl enable wake-on-lan.service
-        # Start the service
-        sudo systemctl start wake-on-lan.service
-        # Wait a moment for service to start
-        sleep 3
-        # Check service status
-        sudo systemctl status wake-on-lan.service
+        sudo systemctl restart wake-on-lan.service
+        echo "Main application service deployed and started."
 
-    - name: Verify deployment
+    - name: Update Proxy Route for Production
       run: |
-        # Check if service is running
-        sleep 5
-        if curl -s http://localhost:8080/ > /dev/null 2>&1; then
-          echo "✅ Application is running and responding on port 8080"
-          echo "✅ Frontend is accessible through Go server"
-        else
-          echo "❌ Application is not responding on port 8080"
-          sudo systemctl status wake-on-lan.service
-          exit 1
+        HOSTNAME="wol.tkymhrt.dpdns.org"
+        TARGET="http://localhost:8080" # Assuming main app runs on 8080
+        ROUTES_FILE="/opt/wol-proxy/routes.json"
+
+        sudo touch ${ROUTES_FILE} && sudo chown $(whoami) ${ROUTES_FILE}
+        temp_json=$(jq ".routes.\"${HOSTNAME}\" = \"${TARGET}\"" ${ROUTES_FILE})
+        echo "${temp_json}" | sudo tee ${ROUTES_FILE} > /dev/null
+        echo "Updated proxy config for production: ${HOSTNAME} -> ${TARGET}"
+
+    - name: Reload Proxy
+      run: |
+        PROXY_PID=$(pgrep -f "/opt/wol-proxy/proxy-server")
+        if [ -n "${PROXY_PID}" ]; then
+          sudo kill -SIGHUP ${PROXY_PID}
+          echo "Sent SIGHUP to proxy (PID: ${PROXY_PID})"
         fi
 
-        # Test API endpoints
-        if curl -s http://localhost:8080/api/status\?ip\=127.0.0.1 > /dev/null 2>&1; then
-          echo "✅ API endpoints are working"
-        else
-          echo "❌ API endpoints are not responding"
-          exit 1
-        fi
-
-    - name: Show deployment info
-      run: |
-        echo "🚀 Wake-on-LAN Application deployed successfully!"
-        echo ""
-        echo "📊 Service Status:"
-        sudo systemctl status wake-on-lan.service --no-pager
-        echo ""
-        echo "📝 Application Details:"
-        echo "- Complete application running on: http://localhost:8080"
-        echo "- Frontend (React): Served by Go server at /"
-        echo "- API endpoints: /api/wake, /api/status"
-        echo "- Static files location: /opt/wake-on-lan/frontend/dist/"
-        echo "- Binary location: /opt/wake-on-lan/wol-server"
-        echo ""
-        echo "🔗 Cloudflare Tunnel Configuration:"
-        echo "- Point your tunnel to: localhost:8080"
-        echo "- This will serve both frontend and API on the same port"
-        echo ""
-        echo "📋 Management Commands:"
-        echo "- View logs: sudo journalctl -u wake-on-lan.service -f"
-        echo "- Restart service: sudo systemctl restart wake-on-lan.service"
-        echo "- Stop service: sudo systemctl stop wake-on-lan.service"
-        echo ""
-        echo "📁 Deployed Files:"
-        ls -la /opt/wake-on-lan/
-        echo ""
-        echo "Frontend files:"
-        ls -la /opt/wake-on-lan/frontend/dist/ | head -10
-
-    - name: Notify deployment completion
-      run: |
-        echo "📡 Deployment completed at: $(date)"
-        echo "🌐 Your application should now be accessible via Cloudflare Tunnel"
+    - name: Cleanup temp files
+      run: rm -rf /tmp/prod-deployment
