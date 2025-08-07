@@ -154,14 +154,13 @@ jobs:
 
     - name: Reload Proxy
       run: |
-        # Find PID of proxy service and send SIGHUP
-        PROXY_PID=$(pgrep -f "/opt/wol-proxy/proxy-server")
+        # Find PID of proxy service and send SIGHUP. Use "|| true" to prevent exit on no-match.
+        PROXY_PID=$(pgrep -f "/opt/wol-proxy/proxy-server" || true)
         if [ -n "${PROXY_PID}" ]; then
           sudo kill -SIGHUP ${PROXY_PID}
           echo "Sent SIGHUP to proxy (PID: ${PROXY_PID})"
         else
           echo "Proxy process not found. It might need to be started."
-          # You might want to fail the job here if the proxy is critical
         fi
 
     - name: Post Preview URL to PR
@@ -216,7 +215,8 @@ jobs:
 
     - name: Reload Proxy
       run: |
-        PROXY_PID=$(pgrep -f "/opt/wol-proxy/proxy-server")
+        # Find PID of proxy service and send SIGHUP. Use "|| true" to prevent exit on no-match.
+        PROXY_PID=$(pgrep -f "/opt/wol-proxy/proxy-server" || true)
         if [ -n "${PROXY_PID}" ]; then
           sudo kill -SIGHUP ${PROXY_PID}
           echo "Sent SIGHUP to proxy (PID: ${PROXY_PID})"
@@ -328,7 +328,8 @@ jobs:
 
     - name: Reload Proxy
       run: |
-        PROXY_PID=$(pgrep -f "/opt/wol-proxy/proxy-server")
+        # Find PID of proxy service and send SIGHUP. Use "|| true" to prevent exit on no-match.
+        PROXY_PID=$(pgrep -f "/opt/wol-proxy/proxy-server" || true)
         if [ -n "${PROXY_PID}" ]; then
           sudo kill -SIGHUP ${PROXY_PID}
           echo "Sent SIGHUP to proxy (PID: ${PROXY_PID})"
