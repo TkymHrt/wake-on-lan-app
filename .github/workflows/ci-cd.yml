@@ -14,23 +14,24 @@ jobs:
     runs-on: self-hosted
     outputs:
       artifact_name: frontend-dist
+    defaults:
+      run:
+        working-directory: ./frontend
     strategy:
       matrix:
         node-version: [20.x]
     steps:
     - uses: actions/checkout@v4
     - uses: pnpm/action-setup@v2
+      with:
+        version: latest
     - uses: actions/setup-node@v4
       with:
         node-version: ${{ matrix.node-version }}
         cache: 'pnpm'
-        cache-dependency-path: './frontend/pnpm-lock.yaml'
     - run: pnpm install --frozen-lockfile
-      working-directory: ./frontend
     - run: pnpm exec biome ci ./
-      working-directory: ./frontend
     - run: pnpm run build
-      working-directory: ./frontend
     - uses: actions/upload-artifact@v4
       with:
         name: frontend-dist
@@ -40,6 +41,9 @@ jobs:
     runs-on: self-hosted
     outputs:
       artifact_name: backend-binary
+    defaults:
+      run:
+        working-directory: ./backend
     strategy:
       matrix:
         go-version: ['1.22']
@@ -49,11 +53,8 @@ jobs:
       with:
         go-version: ${{ matrix.go-version }}
     - run: go mod tidy
-      working-directory: ./backend
     - run: go test -v ./...
-      working-directory: ./backend
     - run: go build -v -o wol-server ./...
-      working-directory: ./backend
     - uses: actions/upload-artifact@v4
       with:
         name: backend-binary
@@ -66,6 +67,9 @@ jobs:
     runs-on: self-hosted
     outputs:
       artifact_name: proxy-binary
+    defaults:
+      run:
+        working-directory: ./proxy
     strategy:
       matrix:
         go-version: ['1.22']
@@ -75,9 +79,7 @@ jobs:
       with:
         go-version: ${{ matrix.go-version }}
     - run: go mod tidy
-      working-directory: ./proxy
     - run: go build -v -o proxy-server ./...
-      working-directory: ./proxy
     - uses: actions/upload-artifact@v4
       with:
         name: proxy-binary
