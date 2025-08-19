@@ -15,7 +15,7 @@
 		"check:fix": "pnpm exec biome check --write"
 	},
 	"dependencies": {
-		"preact": "^10.27.0",
+		"preact": "^10.27.1",
 		"react-toastify": "^11.0.5"
 	},
 	"devDependencies": {
