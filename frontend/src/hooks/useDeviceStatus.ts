@@ -9,20 +9,22 @@ export const useDeviceStatus = (history: HistoryItem[]) => {
 		const checkAllDevicesStatus = async () => {
 			const newStatus = { ...deviceStatus };
 
-			for (const item of history) {
-				if (item.ipAddress) {
-					try {
-						const data = await checkDeviceStatus(item.ipAddress);
-						newStatus[item.ipAddress] = data.online;
-					} catch (error) {
-						console.error(
-							`Error checking status for ${item.ipAddress}:`,
-							error,
-						);
-						newStatus[item.ipAddress] = false;
+			await Promise.all(
+				history.map(async (item) => {
+					if (item.ipAddress) {
+						try {
+							const data = await checkDeviceStatus(item.ipAddress);
+							newStatus[item.ipAddress] = data.online;
+						} catch (error) {
+							console.error(
+								`Error checking status for ${item.ipAddress}:`,
+								error,
+							);
+							newStatus[item.ipAddress] = false;
+						}
 					}
-				}
-			}
+				}),
+			);
 
 			setDeviceStatus(newStatus);
 		};
